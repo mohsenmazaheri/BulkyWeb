@@ -1,0 +1,18 @@
+from https://codeseven.github.io/toastr/
+copied this CDN for _Layout page master:
+//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css
+
+and copied this js CDN for _Notification partial view:
+//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js
+
+Quick start
+ 3 Easy Steps
+For other API calls, see the demo.
+
+Link to toastr.css <link href="toastr.css" rel="stylesheet"/>
+
+Link to toastr.js <script src="toastr.js"></script>
+
+use toastr to display a toast for info, success, warning or error
+// Display an info toast with no title
+toastr.info('Are you the 6 fingered man?')
