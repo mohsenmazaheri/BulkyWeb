@@ -299,9 +299,7 @@ bg-success {
     .btn-check:focus + .btn-danger, .btn-danger:focus {
         color: #fff;
         background-color: #d9534f;
-        ;
         border-color: #d9534f;
-        ;
         box-shadow: 0 0 0 0.25rem rgba(223, 109, 105, 0.5);
     }
 

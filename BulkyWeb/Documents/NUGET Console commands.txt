@@ -1,0 +1,11 @@
+For installing the latest version:
+Install-Package Microsoft.EntityFrameworkCore
+Install-Package Microsoft.EntityFrameworkCore.SqlServer
+Install-Package Microsoft.EntityFrameworkCore.Tools
+Install-Package Microsoft.EntityFrameworkCore.Design
+
+For installing specific version:
+Install-Package Microsoft.EntityFrameworkCore -Version 9.0.10
+Install-Package Microsoft.EntityFrameworkCore.SqlServer -Version 9.0.10
+Install-Package Microsoft.EntityFrameworkCore.Tools -Version 9.0.10
+Install-Package Microsoft.EntityFrameworkCore.Design -Version 9.0.10
