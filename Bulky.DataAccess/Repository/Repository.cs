@@ -17,6 +17,9 @@ namespace Bulky.DataAccess.Repository
             this.dbSet = _db.Set<T>();
             //_db.Categories == dbSet
             //dbSet.Add() == _db.Categories.Add()
+
+            // For filling Category classes in Product class
+            _db.Products.Include(a => a.Category);
         }
 
         public void Add(T entity)
@@ -24,16 +27,34 @@ namespace Bulky.DataAccess.Repository
             dbSet.Add(entity);
         }
 
-        public T Get(System.Linq.Expressions.Expression<Func<T, bool>> filter)
+        public T Get(System.Linq.Expressions.Expression<Func<T, bool>> filter, string? includeProperties = null)
         {
             IQueryable<T> query = dbSet;
             query = query.Where(filter);
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
             return query.FirstOrDefault();
         }
-
-        public IEnumerable<T> GetAll()
+        /// <summary>
+        /// Get all elements
+        /// </summary>
+        /// <param name="includeProperties">A comma text for adding includes such as (Category,CoverType)</param>
+        /// <returns></returns>
+        public IEnumerable<T> GetAll(string? includeProperties = null)
         {
             IQueryable<T> query = dbSet;
+            if(!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var property in includeProperties.Split(new char[] {','}, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(property);
+                }
+            }
             return query.ToList();
         }
 
