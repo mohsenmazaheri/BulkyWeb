@@ -3,6 +3,7 @@ using Bulky.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Bulky.DataAccess.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213065831_addProductsToDB")]
+    partial class addProductsToDB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -74,18 +77,11 @@ namespace Bulky.DataAccess.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ISBN")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ImageURL")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -107,8 +103,6 @@ namespace Bulky.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
                     b.ToTable("Products");
 
                     b.HasData(
@@ -116,10 +110,8 @@ namespace Bulky.DataAccess.Migrations
                         {
                             Id = 1,
                             Author = "Billy Spark",
-                            CategoryId = 1,
                             Description = "Presents vitae sodales libro.",
                             ISBN = "SWD99999001",
-                            ImageURL = "",
                             ListPrice = 99.0,
                             Price = 90.0,
                             Price100 = 80.0,
@@ -130,10 +122,8 @@ namespace Bulky.DataAccess.Migrations
                         {
                             Id = 2,
                             Author = "Nancy Hoover",
-                            CategoryId = 1,
                             Description = "Presents dark skies.",
                             ISBN = "SWD777777001",
-                            ImageURL = "",
                             ListPrice = 40.0,
                             Price = 30.0,
                             Price100 = 20.0,
@@ -144,41 +134,14 @@ namespace Bulky.DataAccess.Migrations
                         {
                             Id = 3,
                             Author = "Julian Button",
-                            CategoryId = 2,
                             Description = "Presents a romantic story.",
                             ISBN = "SWD555555501",
-                            ImageURL = "",
                             ListPrice = 55.0,
                             Price = 50.0,
                             Price100 = 40.0,
                             Price50 = 45.0,
                             Title = "Vanish in the Sunset"
-                        },
-                        new
-                        {
-                            Id = 4,
-                            Author = "Sadegh Hedayat",
-                            CategoryId = 3,
-                            Description = "A dark story.",
-                            ISBN = "SWD12323423401",
-                            ImageURL = "",
-                            ListPrice = 5.5,
-                            Price = 5.0,
-                            Price100 = 4.0,
-                            Price50 = 4.5,
-                            Title = "Blind Owl"
                         });
-                });
-
-            modelBuilder.Entity("Bulky.Models.Product", b =>
-                {
-                    b.HasOne("Bulky.Models.Category", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Category");
                 });
 #pragma warning restore 612, 618
         }
