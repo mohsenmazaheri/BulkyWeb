@@ -12,7 +12,7 @@ using Microsoft.Build.Tasks.Deployment.Bootstrapper;
 namespace BulkyWeb.Areas.Admin.Controllers
 {
     [Area("Admin")]
-    [Authorize(Roles = SD.Role_Admin)]
+    //[Authorize(Roles = SD.Role_Admin)]
 
     public class ProductController : Controller
     {
