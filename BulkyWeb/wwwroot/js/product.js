@@ -18,13 +18,13 @@ function loadDataTable() {
                 render: function (data) {
                     return `
                     <div class="btn-group w-75" role="group">
-                        <a href="/admin/company/upsert?id=${data}" 
+                        <a href="/admin/product/upsert?id=${data}" 
                            class="btn btn-primary mx-1 d-flex align-items-center">
                             <i class="bi bi-pencil-square me-1"></i> Edit
                         </a>
 
                         <a href="javascript:void(0)" 
-                           onclick="Delete('/admin/company/delete/${data}')" 
+                           onclick="Delete('/admin/product/delete/${data}')" 
                            class="btn btn-danger mx-1 d-flex align-items-center">
                             <i class="bi bi-trash-fill me-1"></i> Delete
                         </a>
