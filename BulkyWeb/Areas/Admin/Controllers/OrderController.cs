@@ -1,6 +1,11 @@
 ﻿using Bulky.DataAccess.Repository.IRepository;
+using Bulky.Models;
+using Bulky.Models.ViewModels;
+using Bulky.Utility;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Build.Tasks;
+using System.Diagnostics;
 
 namespace BulkyWeb.Areas.Admin.Controllers
 {
@@ -18,11 +23,41 @@ namespace BulkyWeb.Areas.Admin.Controllers
             return View();
         }
 
+        public IActionResult Details(int orderId)
+        {
+            OrderVM orderVM = new()
+            {
+                OrderHeader = _unitOfWork.OrderHeader.Get(u => u.Id == orderId, includeProperties: "ApplicationUser"),
+                OrderDetails = _unitOfWork.OrderDetail.GetAll(u => u.OrderHeaderId == orderId, includeProperties: "Product")
+            };
+            return View(orderVM);
+        }
+
         #region API CALLS
         [HttpGet]
-        public IActionResult GetAll()
+        public IActionResult GetAll(string status)
         {
-            var orderHeaders = _unitOfWork.OrderHeader.GetAll(null, includeProperties: "ApplicationUser").ToList();
+            IEnumerable<OrderHeader> orderHeaders = _unitOfWork.OrderHeader.GetAll(null, includeProperties: "ApplicationUser").ToList();
+
+            switch (status)
+            {
+                case "pending":
+                    //orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.PaymentStatusDelayedPayment);
+                    orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusPending);
+                    break;
+                case "inprocess":
+                    orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusInProcess);
+                    break;
+                case "completed":
+                    orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusShipped);
+                    break;
+                case "approved":
+                    orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusApproved);
+                    break;
+                default:
+                    break;
+            }
+
             return Json(new { data = orderHeaders });
         }
         
