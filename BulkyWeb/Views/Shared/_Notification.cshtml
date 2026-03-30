@@ -1,18 +1,40 @@
 ﻿@if (TempData["success"] != null)
 {
-    <script src="~/lib//jquery/dist/jquery.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <script type="text/javascript">
-        toastr.success('@TempData["success"]');
+        (function() {
+            var msg = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["success"]));
+            function show() {
+                if (window.toastr && typeof toastr.success === 'function') {
+                    toastr.success(msg);
+                } else {
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (window.toastr && typeof toastr.success === 'function') {
+                            toastr.success(msg);
+                        }
+                    });
+                }
+            }
+            show();
+        })();
     </script>
-    @* <h2>@TempData["success"]</h2> *@
 }
 @if (TempData["error"] != null)
 {
-    <script src="~/lib//jquery/dist/jquery.min.js"></script>
-    <script src="//cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
     <script type="text/javascript">
-        toastr.error('@TempData["error"]');
+        (function() {
+            var msg = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(TempData["error"]));
+            function show() {
+                if (window.toastr && typeof toastr.error === 'function') {
+                    toastr.error(msg);
+                } else {
+                    document.addEventListener('DOMContentLoaded', function () {
+                        if (window.toastr && typeof toastr.error === 'function') {
+                            toastr.error(msg);
+                        }
+                    });
+                }
+            }
+            show();
+        })();
     </script>
-   @*  <h2>@TempData["error"]</h2> *@
 }
