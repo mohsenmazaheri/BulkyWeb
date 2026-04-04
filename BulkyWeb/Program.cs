@@ -1,10 +1,13 @@
 using Bulky.DataAccess.Data;
+using Bulky.DataAccess.DBInitializer;
 using Bulky.DataAccess.Repository;
 using Bulky.DataAccess.Repository.IRepository;
 using Bulky.Utility;
 using Microsoft.AspNetCore.Identity;
+using Bulky.Models;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,15 +15,18 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options => 
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection"))
+           // Do not fail startup when the EF model has changes that are not captured by migrations.
+           // Log the PendingModelChangesWarning instead of throwing so migrations can be applied at runtime.
+           .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
 // Fetching Stripe settings into StripeSettings properties 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
 
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 //builder.Services.AddDefaultIdentity<IdentityUser>().AddEntityFrameworkStores<ApplicationDbContext>();
-builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>().AddDefaultTokenProviders();
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = $"/Identity/Account/Login";
@@ -37,6 +43,7 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 //-----------------------------------------
+builder.Services.AddScoped<IDbInitializer, DbInitializer>();
 builder.Services.AddRazorPages();
 
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -62,6 +69,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseSession();
+await SeedDatabaseAsync();
 
 app.MapRazorPages();
 
@@ -70,3 +78,12 @@ app.MapControllerRoute(
     pattern: "{area=Customer}/{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+async Task SeedDatabaseAsync()
+{
+    using (var scope = app.Services.CreateScope())
+    {
+        var dbInitializer = scope.ServiceProvider.GetRequiredService<IDbInitializer>();
+        await dbInitializer.InitializeAsync();
+    }
+}
