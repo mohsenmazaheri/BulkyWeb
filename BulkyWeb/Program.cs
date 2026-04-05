@@ -16,10 +16,13 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection"))
-           // Do not fail startup when the EF model has changes that are not captured by migrations.
-           // Log the PendingModelChangesWarning instead of throwing so migrations can be applied at runtime.
-           .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection")));
+
+//builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection"))
+//           // Do not fail startup when the EF model has changes that are not captured by migrations.
+//           // Log the PendingModelChangesWarning instead of throwing so migrations can be applied at runtime.
+//           .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
 
 // Fetching Stripe settings into StripeSettings properties 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
