@@ -24,7 +24,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
         
         public IActionResult Index()
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
 
             ShoppingCartVM = new()
             {
@@ -44,7 +44,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Summary()
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
 
             ShoppingCartVM = new()
             {
@@ -74,7 +74,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
         [ActionName("Summary")]
         public IActionResult SummaryPOST()
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
 
             ShoppingCartVM.ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId,
                 includeProperties: "Product");
@@ -164,7 +164,12 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult OrderConfirmation(int id)
         {
-            OrderHeader orderHeader = _unitOfWork.OrderHeader.Get(o => o.Id == id, includeProperties: "ApplicationUser");
+            var userId = User.GetUserId();
+            // Only the customer who placed the order lands here after checkout
+            OrderHeader orderHeader = _unitOfWork.OrderHeader.Get(o => o.Id == id && o.ApplicationUserId == userId, includeProperties: "ApplicationUser");
+            if (orderHeader == null)
+                return NotFound();
+
             if(orderHeader.PaymentStatus != SD.PaymentStatusDelayedPayment)
             {
                 // This is an order by customer
@@ -183,7 +188,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
             }
 
             List<ShoppingCart> shoppingCarts = _unitOfWork.ShoppingCart
-                .GetAll(a => a.ApplicationUserId == orderHeader.ApplicationUserId).ToList();
+                .GetAll(a => a.ApplicationUserId == userId).ToList();
             _unitOfWork.ShoppingCart.RemoveRange(shoppingCarts);
             _unitOfWork.Save();
 
@@ -192,7 +197,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Plus(int cartId)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             // The owner check is part of the query: another user's cartId returns null
             var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId);
             if (cartFromDB == null)
@@ -206,7 +211,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Minus(int cartId)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId, tracked: true);
             if (cartFromDB == null)
                 return NotFound();
@@ -228,7 +233,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Remove(int cartId)
         {
-            var userId = GetUserId();
+            var userId = User.GetUserId();
             var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId, tracked: true);
             if (cartFromDB == null)
                 return NotFound();
@@ -237,15 +242,6 @@ namespace BulkyWeb.Areas.Customer.Controllers
             _unitOfWork.ShoppingCart.Remove(cartFromDB);
             _unitOfWork.Save();
             return RedirectToAction(nameof(Index));
-        }
-
-        /// <summary>
-        /// Reads the logged-in user's Id from the signed auth cookie claims.
-        /// Unlike ids from the URL or form, this value cannot be changed by the user.
-        /// </summary>
-        private string GetUserId()
-        {
-            return User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         }
 
         private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart)

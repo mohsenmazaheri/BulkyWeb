@@ -36,9 +36,13 @@ namespace BulkyWeb.Areas.Admin.Controllers
 
         public IActionResult Details(int orderId)
         {
+            var orderHeader = GetOrderForCurrentUser(orderId, includeProperties: "ApplicationUser");
+            if (orderHeader == null)
+                return NotFound();
+
             OrderVM = new()
             {
-                OrderHeader = _unitOfWork.OrderHeader.Get(u => u.Id == orderId, includeProperties: "ApplicationUser"),
+                OrderHeader = orderHeader,
                 OrderDetails = _unitOfWork.OrderDetail.GetAll(u => u.OrderHeaderId == orderId, includeProperties: "Product")
             };
             return View(OrderVM);
@@ -129,8 +133,13 @@ namespace BulkyWeb.Areas.Admin.Controllers
         [HttpPost]
         public IActionResult DetailsPayNow()
         {
-            OrderVM.OrderHeader = _unitOfWork.OrderHeader.Get(u => u.Id == OrderVM.OrderHeader.Id, includeProperties: "ApplicationUser");
-            OrderVM.OrderDetails = _unitOfWork.OrderDetail.GetAll(u => u.OrderHeaderId == OrderVM.OrderHeader.Id, includeProperties: "Product");
+            // The order id comes from a hidden form field, so it must be checked like any URL id
+            var orderHeader = GetOrderForCurrentUser(OrderVM.OrderHeader.Id, includeProperties: "ApplicationUser");
+            if (orderHeader == null)
+                return NotFound();
+
+            OrderVM.OrderHeader = orderHeader;
+            OrderVM.OrderDetails = _unitOfWork.OrderDetail.GetAll(u => u.OrderHeaderId == orderHeader.Id, includeProperties: "Product");
 
             // Stripe Logic
             var domain = "https://localhost:7197/";
@@ -172,7 +181,10 @@ namespace BulkyWeb.Areas.Admin.Controllers
 
         public IActionResult PaymentConfirmation(int orderHeaderId)
         {
-            OrderHeader orderHeader = _unitOfWork.OrderHeader.Get(o => o.Id == orderHeaderId);
+            var orderHeader = GetOrderForCurrentUser(orderHeaderId);
+            if (orderHeader == null)
+                return NotFound();
+
             if (orderHeader.PaymentStatus == SD.PaymentStatusDelayedPayment)
             {
                 // This is an order by company
@@ -197,16 +209,12 @@ namespace BulkyWeb.Areas.Admin.Controllers
         {
             IEnumerable<OrderHeader> orderHeaders = null;
 
-            if (User.IsInRole(SD.Role_Admin) || User.IsInRole(SD.Role_Employee))
+            if (User.IsStaff())
                 orderHeaders = _unitOfWork.OrderHeader.GetAll(null, includeProperties: "ApplicationUser").ToList();
             else
             {
-                ClaimsIdentity? claimsIdentity = (ClaimsIdentity)User.Identity;
-                if (claimsIdentity != null)
-                {
-                    string userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
-                    orderHeaders = _unitOfWork.OrderHeader.GetAll(a => a.ApplicationUserId == userId, includeProperties: "ApplicationUser");
-                }
+                var userId = User.GetUserId();
+                orderHeaders = _unitOfWork.OrderHeader.GetAll(a => a.ApplicationUserId == userId, includeProperties: "ApplicationUser");
             }
 
             if (orderHeaders != null)
@@ -235,5 +243,19 @@ namespace BulkyWeb.Areas.Admin.Controllers
         }
 
         #endregion
+
+        /// <summary>
+        /// Loads an order only if the current user may access it:
+        /// staff (Admin/Employee) can open any order, everyone else only their own.
+        /// Returns null otherwise, so callers can answer with NotFound().
+        /// </summary>
+        private OrderHeader? GetOrderForCurrentUser(int orderId, string? includeProperties = null)
+        {
+            if (User.IsStaff())
+                return _unitOfWork.OrderHeader.Get(o => o.Id == orderId, includeProperties);
+
+            var userId = User.GetUserId();
+            return _unitOfWork.OrderHeader.Get(o => o.Id == orderId && o.ApplicationUserId == userId, includeProperties);
+        }
     }
 }
