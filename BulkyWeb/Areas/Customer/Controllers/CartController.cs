@@ -24,8 +24,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
         
         public IActionResult Index()
         {
-            var claimsIdentity = (ClaimsIdentity)User.Identity;
-            var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var userId = GetUserId();
 
             ShoppingCartVM = new()
             {
@@ -45,8 +44,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Summary()
         {
-            var claimsIdentity = (ClaimsIdentity)User.Identity;
-            var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var userId = GetUserId();
 
             ShoppingCartVM = new()
             {
@@ -76,8 +74,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
         [ActionName("Summary")]
         public IActionResult SummaryPOST()
         {
-            var claimsIdentity = (ClaimsIdentity)User.Identity;
-            var userId = claimsIdentity.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var userId = GetUserId();
 
             ShoppingCartVM.ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId,
                 includeProperties: "Product");
@@ -195,7 +192,12 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Plus(int cartId)
         {
-            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId);
+            var userId = GetUserId();
+            // The owner check is part of the query: another user's cartId returns null
+            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId);
+            if (cartFromDB == null)
+                return NotFound();
+
             cartFromDB.Count += 1;
             _unitOfWork.ShoppingCart.Update(cartFromDB);
             _unitOfWork.Save();
@@ -204,11 +206,15 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Minus(int cartId)
         {
-            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId, tracked: true);
+            var userId = GetUserId();
+            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId, tracked: true);
+            if (cartFromDB == null)
+                return NotFound();
+
             if (cartFromDB.Count <= 1)
             {
                 // Remove it from the cart and the session
-                HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(a => a.ApplicationUserId == cartFromDB.ApplicationUserId).Count() - 1);
+                HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(a => a.ApplicationUserId == userId).Count() - 1);
                 _unitOfWork.ShoppingCart.Remove(cartFromDB);
             }
             else
@@ -222,11 +228,24 @@ namespace BulkyWeb.Areas.Customer.Controllers
 
         public IActionResult Remove(int cartId)
         {
-            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId, tracked:true);
-            HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(a => a.ApplicationUserId == cartFromDB.ApplicationUserId).Count() - 1);
+            var userId = GetUserId();
+            var cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.Id == cartId && a.ApplicationUserId == userId, tracked: true);
+            if (cartFromDB == null)
+                return NotFound();
+
+            HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(a => a.ApplicationUserId == userId).Count() - 1);
             _unitOfWork.ShoppingCart.Remove(cartFromDB);
             _unitOfWork.Save();
             return RedirectToAction(nameof(Index));
+        }
+
+        /// <summary>
+        /// Reads the logged-in user's Id from the signed auth cookie claims.
+        /// Unlike ids from the URL or form, this value cannot be changed by the user.
+        /// </summary>
+        private string GetUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         }
 
         private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart)
