@@ -6,6 +6,7 @@ using Bulky.Utility;
 using Microsoft.AspNetCore.Identity;
 using Bulky.Models;
 using Microsoft.AspNetCore.Identity.UI.Services;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Stripe;
@@ -13,7 +14,10 @@ using Stripe;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddControllersWithViews();
+// Validate the anti-forgery token on every unsafe request (POST, PUT, DELETE...) to prevent CSRF.
+// GET, HEAD, OPTIONS and TRACE are skipped, so GET actions must never change data.
+builder.Services.AddControllersWithViews(options =>
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection")));

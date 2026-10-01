@@ -1,11 +1,14 @@
 ﻿@using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	@* Anti-forgery token for AJAX requests; site.js sends it in the RequestVerificationToken header *@
+	<meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 	<title>@ViewData["Title"] - BulkyWeb</title>
 	<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
 	<link rel="stylesheet" href="~/BulkyWeb.styles.css" asp-append-version="true" />
