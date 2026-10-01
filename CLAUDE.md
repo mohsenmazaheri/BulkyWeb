@@ -77,7 +77,11 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
 - **Admin list pages** use DataTables, loaded by AJAX from `wwwroot/js/{product,company,order}.js`. Controllers expose JSON endpoints in a `#region API CALLS` block: `GetAll` returns `Json(new { data = ... })`, and `[HttpDelete] Delete` returns `{ success, message }`. Deletes are confirmed with SweetAlert2.
 - **Notifications.** Set `TempData["success"]` / `TempData["error"]`. `Views/Shared/_Notification.cshtml` renders them with Toastr.
 - **Upsert.** Create and edit share one `Upsert(int? id)` action and view (Product, Company).
-- **Product images** are saved to `wwwroot/images/product/` with GUID file names, and `ImageURL` is stored as `\images\product\<file>`. Old files are deleted on replace or delete. That folder is git-ignored.
+- **Product images**
+  - Uploads are saved to `wwwroot/Images/Product/` with GUID file names, and `ImageURL` is stored as `/Images/Product/<file>`. Use forward slashes and that exact casing, because Linux is case-sensitive. Older rows may still hold `\images\product\...`.
+  - The folder is git-ignored and is created on upload with `Directory.CreateDirectory`.
+  - Old files are deleted on replace or delete, but only through `ProductController.GetImageFilePath`. On edit the old URL comes from a hidden form field, so that method returns null for any path outside `wwwroot/Images/Product`.
+  - Views render covers with `Url.ProductImage(product.ImageURL)` (`BulkyWeb/Extensions/UrlHelperExtensions.cs`). It falls back to `~/Images/book.png` when `ImageURL` is empty, as it is for every seeded product.
 - **Cart count** is cached in session under `SD.SessionCart` and rendered by `ViewComponents/ShoppingCartViewComponent`. Any code that adds or removes cart items must update the session value, as `HomeController.Details` (POST) and `CartController.Minus/Remove` do.
 - **Pricing tiers.** `Product` has `Price`, `Price50` and `Price100`. `CartController.GetPriceBasedOnQuantity` picks one based on quantity.
 - **Orders / Stripe.** Regular customers pay immediately through a Stripe Checkout session (`CartController.SummaryPOST` → `OrderConfirmation`). Company users get delayed payment (`SD.PaymentStatusDelayedPayment`) and pay later from `Admin/Order/Details` (`DetailsPayNow` → `PaymentConfirmation`). Order status transitions go through `OrderHeaderRepository.UpdateStatus` / `UpdateStripePaymentId`. Cancelling a paid order issues a Stripe refund.
