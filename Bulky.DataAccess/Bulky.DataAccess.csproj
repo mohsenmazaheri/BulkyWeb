@@ -1,27 +1,31 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	
+<Project Sdk="Microsoft.NET.Sdk">
+
 	<PropertyGroup>
 		<TargetFramework>net10.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
-	
+
+	<!-- EF Core stays on 9.0.x until Pomelo (the MariaDB provider) supports EF Core 10.
+	     Both database providers are referenced; "DatabaseProvider" in configuration picks one at startup. -->
 	<ItemGroup>
-	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.12" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+	  <FrameworkReference Include="Microsoft.AspNetCore.App" />
+	  <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.20" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.20" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.20">
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
-	  <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.20" />
+	  <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.20">
 	    <PrivateAssets>all</PrivateAssets>
 	    <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 	  </PackageReference>
+	  <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0" />
 	</ItemGroup>
-	
+
 	<ItemGroup>
 	  <ProjectReference Include="..\Bulky.Models\Bulky.Models.csproj" />
-	</ItemGroup>	
-	
+	</ItemGroup>
+
 </Project>

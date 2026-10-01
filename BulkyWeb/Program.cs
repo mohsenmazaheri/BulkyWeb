@@ -8,7 +8,6 @@ using Bulky.Models;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -19,14 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews(options =>
     options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection")));
-
-//builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//    options.UseSqlServer(builder.Configuration.GetConnectionString("ApplicationDbContextConnection"))
-//           // Do not fail startup when the EF model has changes that are not captured by migrations.
-//           // Log the PendingModelChangesWarning instead of throwing so migrations can be applied at runtime.
-//           .ConfigureWarnings(w => w.Log(RelationalEventId.PendingModelChangesWarning)));
+// SQL Server or MariaDB, chosen by the "DatabaseProvider" setting (see appsettings.json)
+builder.Services.AddBulkyDatabase(builder.Configuration);
 
 // Fetching Stripe settings into StripeSettings properties 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
