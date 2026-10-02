@@ -121,12 +121,11 @@ namespace BulkyWeb.Areas.Customer.Controllers
             // User is a regular customer account and we need to capture payment
             if (applicationUser.CompanyId.GetValueOrDefault() == 0)
             {
-                var domain = "https://localhost:7197/";
                 // Stripe Logic
                 var options = new Stripe.Checkout.SessionCreateOptions
                 {
-                    SuccessUrl = domain + $"customer/cart/OrderConfirmation?id={ShoppingCartVM.OrderHeader.Id}",
-                    CancelUrl = domain + "customer/cart/index",
+                    SuccessUrl = GetOrderConfirmationUrl(ShoppingCartVM.OrderHeader.Id),
+                    CancelUrl = GetCartUrl(),
                     LineItems = new List<Stripe.Checkout.SessionLineItemOptions>(),
                     Mode = "payment",
                 };
@@ -246,6 +245,14 @@ namespace BulkyWeb.Areas.Customer.Controllers
             _unitOfWork.Save();
             return RedirectToAction(nameof(Index));
         }
+
+        // Stripe sends the customer back to these pages after checkout. They are built from the current request
+        // (scheme + host) and the app's routes, so they work on any domain or port, not only https://localhost:7197.
+        internal string GetOrderConfirmationUrl(int orderId) =>
+            Url.Action(nameof(OrderConfirmation), "Cart", new { area = "Customer", id = orderId }, Request.Scheme)!;
+
+        internal string GetCartUrl() =>
+            Url.Action(nameof(Index), "Cart", new { area = "Customer" }, Request.Scheme)!;
 
         private decimal GetPriceBasedOnQuantity(ShoppingCart shoppingCart)
         {
