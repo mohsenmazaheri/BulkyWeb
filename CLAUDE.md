@@ -78,6 +78,9 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
   - jQuery AJAX sends the token automatically: `site.js` reads it from the `csrf-token` meta tag in `_Layout`.
   - An endpoint called by an external server (e.g. a future Stripe webhook) needs `[IgnoreAntiforgeryToken]`.
 - **Admin list pages** use DataTables, loaded by AJAX from `wwwroot/js/{product,company,order}.js`. Controllers expose JSON endpoints in a `#region API CALLS` block: `GetAll` returns `Json(new { data = ... })`, and `[HttpDelete] Delete` returns `{ success, message }`. Deletes are confirmed with SweetAlert2.
+  - Return only the columns the table needs, projected with `Select(o => new { ... })` (see `OrderController.GetAll`).
+  - Never serialize entities that include `ApplicationUser`, because that sends `PasswordHash`, `SecurityStamp`, etc. to the browser.
+  - Order tabs: `pending` filters `PaymentStatus == SD.PaymentStatusDelayedPayment`. `inprocess`, `completed` and `approved` filter `OrderStatus`.
 - **Notifications.** Set `TempData["success"]` / `TempData["error"]`. `Views/Shared/_Notification.cshtml` renders them with Toastr.
 - **Upsert.** Create and edit share one `Upsert(int? id)` action and view (Product, Company).
 - **Product images**
