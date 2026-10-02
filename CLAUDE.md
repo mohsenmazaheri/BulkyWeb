@@ -85,7 +85,8 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
 - **Cart count** is cached in session under `SD.SessionCart` and rendered by `ViewComponents/ShoppingCartViewComponent`. Any code that adds or removes cart items must update the session value, as `HomeController.Details` (POST) and `CartController.Minus/Remove` do.
 - **Pricing tiers.** `Product` has `Price`, `Price50` and `Price100`. `CartController.GetPriceBasedOnQuantity` picks one based on quantity.
 - **Orders / Stripe.** Regular customers pay immediately through a Stripe Checkout session (`CartController.SummaryPOST` → `OrderConfirmation`). Company users get delayed payment (`SD.PaymentStatusDelayedPayment`) and pay later from `Admin/Order/Details` (`DetailsPayNow` → `PaymentConfirmation`). Order status transitions go through `OrderHeaderRepository.UpdateStatus` / `UpdateStripePaymentId`. Cancelling a paid order issues a Stripe refund.
-- The front end uses Bootstrap (the site CSS is based on a Bootswatch theme, and reference files are in `BulkyWeb/Documents/`), Bootstrap Icons, jQuery, Toastr, SweetAlert2, DataTables and TinyMCE. Everything except jQuery/Bootstrap comes from CDNs in `_Layout.cshtml`.
+- The front end uses Bootstrap (the site CSS is based on a Bootswatch theme, and reference files are in `BulkyWeb/Documents/`), Bootstrap Icons, jQuery, Toastr, SweetAlert2, DataTables and TinyMCE. Everything except jQuery/Bootstrap comes from CDNs in `_Layout.cshtml`. TinyMCE is the exception: it is loaded only in `Admin/Views/Product/Upsert.cshtml`.
+- **TinyMCE** is set up in `wwwroot/js/tinymce-setup.js`. List only **free** plugins and toolbar buttons there. The Tiny Cloud key has no premium plan, and every premium plugin shows an "is not enabled on your API key" warning in the editor.
 
 ## Configuration
 
