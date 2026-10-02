@@ -58,7 +58,9 @@ namespace Bulky.Tests.Controllers
 
         [Theory]
         [InlineData("/Images/Product/old.jpg")]    // current format
-        [InlineData(@"\images\product\old.jpg")]   // format stored before this fix
+        // Format stored before Lesson 06 (backslashes). Older rows are also lowercase, but those only exist on
+        // Windows, where paths ignore case; CI runs on Linux, so this case uses the real folder casing.
+        [InlineData(@"\Images\Product\old.jpg")]
         public void Upsert_ReplacingImage_DeletesOldFile(string oldImageUrl)
         {
             var folder = Path.Combine(_webRoot, "Images", "Product");

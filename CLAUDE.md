@@ -18,6 +18,11 @@ dotnet test Bulky.sln                             # run all unit tests
 dotnet test Bulky.Tests --filter "FullyQualifiedName~CartControllerTests"   # one test class
 ```
 
+**CI:** `.github/workflows/ci.yml` (GitHub Actions) runs on every push to `master` and every pull request.
+- It runs on **ubuntu-latest**: restore, Release build, all tests (TRX results plus Cobertura coverage, uploaded as the `test-results` artifact), then a vulnerable-package check that fails the run.
+- Because it runs on Linux, file paths in code and tests must use the exact folder casing.
+- Keep the solution building on Linux.
+
 `dotnet ef` is a local tool pinned in `dotnet-tools.json` (9.0.20, matching EF Core). On a new machine, run `dotnet tool restore` once.
 
 EF Core migrations: each provider has its own migrations project, and the startup project is `BulkyWeb`. **Every model change needs a migration for both providers.** Use the script, which adds both:

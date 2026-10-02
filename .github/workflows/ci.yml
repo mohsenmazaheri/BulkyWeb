@@ -1,0 +1,59 @@
+# Builds the solution and runs all unit tests on every push to master and every pull request.
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+# The workflow only reads the code, so its token gets no write access
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the run that is still going
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    # Linux, like most servers and Docker: catches case-sensitive path problems that Windows hides
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Install the .NET SDK from global.json
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Restore NuGet packages
+        run: dotnet restore Bulky.sln
+
+      - name: Build
+        run: dotnet build Bulky.sln --no-restore --configuration Release
+
+      - name: Run unit tests
+        run: >
+          dotnet test Bulky.sln --no-build --configuration Release
+          --logger trx --results-directory TestResults
+          --collect "XPlat Code Coverage"
+
+      - name: Upload test results and coverage
+        if: always()   # also when tests fail, so the results can be inspected
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults
+
+      # Lesson 02: fail the build when a package (or a package it depends on) has a known vulnerability
+      - name: Check for vulnerable NuGet packages
+        run: |
+          dotnet list Bulky.sln package --vulnerable --include-transitive | tee vulnerable.txt
+          if grep -q "has the following vulnerable packages" vulnerable.txt; then
+            echo "::error::Vulnerable NuGet packages found, see the list above"
+            exit 1
+          fi
