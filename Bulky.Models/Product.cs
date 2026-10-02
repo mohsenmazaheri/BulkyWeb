@@ -50,5 +50,12 @@ namespace Bulky.Models
         [ValidateNever]
         public string ImageURL { get; set; }
 
+        /// <summary>
+        /// Soft delete: a deleted product disappears from the store and the admin list,
+        /// but stays in the database so existing orders still show what was bought.
+        /// </summary>
+        [ValidateNever]
+        public bool IsDeleted { get; set; }
+
     }
 }

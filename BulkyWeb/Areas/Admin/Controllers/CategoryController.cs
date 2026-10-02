@@ -108,6 +108,17 @@ namespace BulkyWeb.Areas.Admin.Controllers
                 return NotFound();
             }
 
+            // Deleting would orphan products (and the orders that contain them), so the database refuses it
+            // (Product -> Category is DeleteBehavior.Restrict). Explain that instead of failing with an error page.
+            // Soft-deleted products count too: old orders still refer to them.
+            var productCount = _unitOfWork.Product.GetAll(p => p.CategoryId == category.Id).Count();
+            if (productCount > 0)
+            {
+                TempData["error"] = $"Category \"{category.Name}\" cannot be deleted because {productCount} product(s) " +
+                    "belong to it (including deleted products that old orders still refer to). Move the products to another category first.";
+                return RedirectToAction("Index");
+            }
+
             _unitOfWork.Category.Remove(category);
             _unitOfWork.Save();
             TempData["success"] = "Category deleted successfully";

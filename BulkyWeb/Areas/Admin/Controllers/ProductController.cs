@@ -25,8 +25,8 @@ namespace BulkyWeb.Areas.Admin.Controllers
         }
         public IActionResult Index()
         {
-            var productList = _unitOfWork.Product.GetAll(null, includeProperties:"Category").ToList();
-            
+            var productList = _unitOfWork.Product.GetAll(p => !p.IsDeleted, includeProperties:"Category").ToList();
+
             return View(productList);
         }
 
@@ -55,7 +55,11 @@ namespace BulkyWeb.Areas.Admin.Controllers
             }
             else // Update
             {
-                productVM.Product = _unitOfWork.Product.Get(a => a.Id == id);
+                var product = _unitOfWork.Product.Get(a => a.Id == id && !a.IsDeleted);
+                if (product == null)
+                    return NotFound();
+
+                productVM.Product = product;
                 return View(productVM);
             }
         }
@@ -116,63 +120,36 @@ namespace BulkyWeb.Areas.Admin.Controllers
             }
         }
 
-        //public IActionResult Delete(int? id)
-        //{
-        //    if (id == null || id == 0)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    var product = _unitOfWork.Product.Get(a => a.Id == id);
-        //    if (product == null)
-        //    {
-        //        return NotFound();
-        //    }
-        //    return View(product);
-        //}
-
-        //[HttpPost, ActionName("Delete")]
-        //public IActionResult DeletePost(int? id)
-        //{
-        //    var product = _unitOfWork.Product.Get(a => a.Id == id);
-        //    if (product == null)
-        //    {
-        //        return NotFound();
-        //    }
-
-        //    _unitOfWork.Product.Remove(product);
-        //    _unitOfWork.Save();
-        //    TempData["success"] = "Product deleted successfully";
-        //    return RedirectToAction("Index");
-        //}
-
         #region API CALLS
         [HttpGet]
         public IActionResult GetAll()
         {
-            var productList = _unitOfWork.Product.GetAll(null, includeProperties: "Category").ToList();
+            var productList = _unitOfWork.Product.GetAll(p => !p.IsDeleted, includeProperties: "Category").ToList();
             return Json(new {data =  productList});
         }
 
+        /// <summary>
+        /// Soft delete: the product is hidden from the store and this list, but the row (and its cover image)
+        /// stays, because existing orders refer to it. A hard delete is also blocked by the database
+        /// (OrderDetail -> Product is DeleteBehavior.Restrict).
+        /// </summary>
         [HttpDelete]
         public IActionResult Delete(int? id)
         {
-            var productToBeDeleted = _unitOfWork.Product.Get(a => a.Id == id);
+            var productToBeDeleted = _unitOfWork.Product.Get(a => a.Id == id && !a.IsDeleted, tracked: true);
             if (productToBeDeleted == null)
             {
-                return Json(new { success = false, message = "Error while deleting"}); 
+                return Json(new { success = false, message = "Product not found" });
             }
 
-            if (!string.IsNullOrEmpty(productToBeDeleted.ImageURL))
-            {
-                var oldImagePath = GetImageFilePath(productToBeDeleted.ImageURL);
-                if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
-                    System.IO.File.Delete(oldImagePath);
-            }
+            productToBeDeleted.IsDeleted = true;
 
-            _unitOfWork.Product.Remove(productToBeDeleted);
+            // Nobody can buy a deleted product, so it leaves every shopping cart
+            var cartItems = _unitOfWork.ShoppingCart.GetAll(c => c.ProductId == productToBeDeleted.Id);
+            _unitOfWork.ShoppingCart.RemoveRange(cartItems);
+
             _unitOfWork.Save();
-            return Json(new { success = true, message = "Deleted Successfully" });
+            return Json(new { success = true, message = "Product deleted" });
         }
         #endregion
 
