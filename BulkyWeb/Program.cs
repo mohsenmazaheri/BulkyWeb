@@ -23,6 +23,8 @@ builder.Services.AddBulkyDatabase(builder.Configuration);
 
 // Fetching Stripe settings into StripeSettings properties 
 builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Stripe"));
+// The first admin account, created by DbInitializer on an empty database (password from user secrets)
+builder.Services.Configure<AdminUserSettings>(builder.Configuration.GetSection(AdminUserSettings.SectionName));
 
 //builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true).AddEntityFrameworkStores<ApplicationDbContext>();
 //builder.Services.AddDefaultIdentity<IdentityUser>().AddEntityFrameworkStores<ApplicationDbContext>();
