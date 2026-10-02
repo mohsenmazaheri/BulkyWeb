@@ -48,7 +48,10 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
   - `Data/ApplicationDbContext`: `IdentityDbContext<ApplicationUser>`. Seed data for categories, companies and products goes in `OnModelCreating` through `HasData`.
   - `Data/DatabaseServiceCollectionExtensions.cs`: `AddBulkyDatabase(configuration)` reads `DatabaseProvider` (`SqlServer` by default, or `MariaDb`). It registers the context with that provider and its migrations assembly. Keep the model provider-neutral: no `HasColumnType("nvarchar(...)")` or other provider-specific SQL.
   - `Repository/`: a generic `Repository<T>` plus one repository per entity, all exposed through `IUnitOfWork`.
-  - `DBInitializer/DbInitializer`: runs at startup. It applies pending migrations, then creates the four roles and a default admin user the first time it runs.
+  - `DBInitializer/DbInitializer`: runs at startup.
+    - It applies pending migrations (relational providers only), creates any missing roles, and creates the first admin from the `AdminUser` settings when no user is in the Admin role.
+    - Every step is idempotent, and Identity errors (`IdentityResult`) are turned into exceptions.
+    - It never promotes an existing account.
 - **BulkyWeb**: the MVC app. `Program.cs` holds all DI, Identity, session and Stripe setup.
 - **Bulky.Tests**: xUnit tests.
   - Controller tests run the real controllers and the real `UnitOfWork` on the EF Core InMemory provider. Create the context with `TestDb.Create()`, and call `db.SaveAndDetach()` after seeding.
@@ -99,4 +102,8 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
 - Create the MariaDB account once per machine with `scripts/create-mariadb-user.sql`, run as root.
 - The MariaDB server version is set explicitly in `AddBulkyDatabase` (`MariaDbServerVersion(11, 4)`) rather than auto-detected, so `dotnet ef` works without a database connection.
 - The `Stripe:SecretKey` / `Stripe:PublishableKey` and `SendGrid:SecretKey` values are blank in the committed config. Supply them through user secrets or environment variables, and never commit real keys.
-- The database is migrated automatically at startup by `DbInitializer`, so a fresh DB is created on first run. Default admin login: `admin@bulky.com` (the password is in `DbInitializer.cs`).
+- The database is migrated automatically at startup by `DbInitializer`, so a fresh DB is created on first run.
+- **The first admin comes from configuration, never from code.**
+  - `AdminUser:Email` is in `appsettings.json` (`admin@bulky.com`). `AdminUser:Password` is empty there and must be set before the first start on an empty database:
+    `dotnet user-secrets set "AdminUser:Password" "..." --project BulkyWeb`, or the `AdminUser__Password` environment variable.
+  - Without it, startup fails with that hint. Databases that already have an admin need no password setting.
