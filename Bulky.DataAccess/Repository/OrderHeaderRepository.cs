@@ -1,6 +1,7 @@
 ﻿using Bulky.DataAccess.Data;
 using Bulky.DataAccess.Repository.IRepository;
 using Bulky.Models;
+using Bulky.Utility;
 using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
@@ -46,6 +47,24 @@ namespace Bulky.DataAccess.Repository
                 orderFromDb.PaymentIntentId = paymentIntentId;
                 orderFromDb.PaymentDate = DateTime.Now;
             }
+        }
+
+        public bool MarkPaid(int id, string sessionId, string? paymentIntentId)
+        {
+            var orderFromDb = _db.OrderHeaders.FirstOrDefault(o => o.Id == id);
+            if (orderFromDb == null || orderFromDb.PaymentStatus == SD.PaymentStatusApproved)
+                return false;
+
+            // Company orders are approved (maybe already shipped) before they are paid: keep their order status.
+            // A normal checkout is approved by the payment itself.
+            if (orderFromDb.PaymentStatus != SD.PaymentStatusDelayedPayment)
+                orderFromDb.OrderStatus = SD.StatusApproved;
+
+            orderFromDb.PaymentStatus = SD.PaymentStatusApproved;
+            orderFromDb.SessionId = sessionId;
+            orderFromDb.PaymentIntentId = paymentIntentId;
+            orderFromDb.PaymentDate = DateTime.Now;
+            return true;
         }
     }
 }

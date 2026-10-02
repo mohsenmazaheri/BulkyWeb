@@ -87,9 +87,10 @@ Starting from a [full audit](Documents/Lesson%2000%20-%20Project%20Audit%20and%2
 | Data integrity | Deleting a category or product **cascaded into order history** | Soft delete for products, `Restrict` foreign keys, friendly refusals |
 | Correctness | Money stored as `double`: Stripe charged **$19.98 for a $19.99 book** | `decimal(18,2)` everywhere, exact cent conversion for Stripe |
 | Bugs | Stripe always sent customers back to `https://localhost:7197` | Return URLs built from the current request and the real routes |
+| Payments | Orders were only marked paid if the customer's browser came back; closing the tab left paid orders "Pending" | **Stripe webhook** with signature verification, idempotent "mark as paid" |
 | Infrastructure | SQL Server only | SQL Server **and** MariaDB, with separate migrations |
 | Dependencies | Outdated packages, one high-severity vulnerability | Updated packages, removed unused ones, CI check |
-| Quality | No tests, no CI | **82 tests**, GitHub Actions on every push and PR, protected `master` |
+| Quality | No tests, no CI | **92 tests**, GitHub Actions on every push and PR, protected `master` |
 
 ---
 
@@ -134,6 +135,20 @@ dotnet user-secrets set "Stripe:PublishableKey" "pk_test_..." --project BulkyWeb
 
 Pay with Stripe's test card `4242 4242 4242 4242`, any future date and any CVC.
 
+**Webhook (recommended):** Stripe calls `POST /stripe/webhook` to confirm payments, even if the customer closes the browser. Locally, the [Stripe CLI](https://docs.stripe.com/stripe-cli) forwards events to your machine:
+
+```bash
+stripe listen --forward-to https://localhost:7197/stripe/webhook
+```
+
+It prints a signing secret (`whsec_...`). Store it:
+
+```bash
+dotnet user-secrets set "Stripe:WebhookSecret" "whsec_..." --project BulkyWeb
+```
+
+On a server, create the endpoint in the Stripe Dashboard (Developers → Webhooks) for the events `checkout.session.completed` and `checkout.session.async_payment_succeeded`.
+
 ### 5. Run
 
 ```bash
@@ -150,11 +165,12 @@ Open https://localhost:7197. On the first start the database, tables, sample boo
 dotnet test Bulky.sln
 ```
 
-82 tests cover:
+92 tests cover:
 - the IDOR and CSRF-related rules;
 - pricing tiers at their boundaries, and exact money arithmetic;
 - soft delete and order history protection;
 - order status filtering;
+- the Stripe webhook, including forged, tampered and replayed events;
 - image upload safety (including the path traversal attacks);
 - the startup initializer, run against the real ASP.NET Core Identity.
 
@@ -172,7 +188,6 @@ Every model change needs a migration for **both** providers. The script creates 
 
 ## Roadmap
 
-- Stripe **webhooks**, so payments are confirmed even if the customer closes the browser
 - Async data access and a service layer for orders and payments
 - Docker image and cloud deployment
 
