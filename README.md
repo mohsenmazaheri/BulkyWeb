@@ -86,9 +86,10 @@ Starting from a [full audit](Documents/Lesson%2000%20-%20Project%20Audit%20and%2
 | Bugs | Missing covers, upload crash on new machines, Windows-only paths | Placeholder image, folder creation, portable paths |
 | Data integrity | Deleting a category or product **cascaded into order history** | Soft delete for products, `Restrict` foreign keys, friendly refusals |
 | Correctness | Money stored as `double`: Stripe charged **$19.98 for a $19.99 book** | `decimal(18,2)` everywhere, exact cent conversion for Stripe |
+| Bugs | Stripe always sent customers back to `https://localhost:7197` | Return URLs built from the current request and the real routes |
 | Infrastructure | SQL Server only | SQL Server **and** MariaDB, with separate migrations |
 | Dependencies | Outdated packages, one high-severity vulnerability | Updated packages, removed unused ones, CI check |
-| Quality | No tests, no CI | **78 tests**, GitHub Actions on every push and PR, protected `master` |
+| Quality | No tests, no CI | **82 tests**, GitHub Actions on every push and PR, protected `master` |
 
 ---
 
@@ -149,7 +150,7 @@ Open https://localhost:7197. On the first start the database, tables, sample boo
 dotnet test Bulky.sln
 ```
 
-78 tests cover:
+82 tests cover:
 - the IDOR and CSRF-related rules;
 - pricing tiers at their boundaries, and exact money arithmetic;
 - soft delete and order history protection;

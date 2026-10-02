@@ -140,11 +140,10 @@ namespace BulkyWeb.Areas.Admin.Controllers
             OrderVM.OrderDetails = _unitOfWork.OrderDetail.GetAll(u => u.OrderHeaderId == orderHeader.Id, includeProperties: "Product");
 
             // Stripe Logic
-            var domain = "https://localhost:7197/";
             var options = new Stripe.Checkout.SessionCreateOptions
             {
-                SuccessUrl = domain + $"admin/order/PaymentConfirmation?orderHeaderId={OrderVM.OrderHeader.Id}",
-                CancelUrl = domain + $"admin/order/details?orderId={OrderVM.OrderHeader.Id}",
+                SuccessUrl = GetPaymentConfirmationUrl(OrderVM.OrderHeader.Id),
+                CancelUrl = GetOrderDetailsUrl(OrderVM.OrderHeader.Id),
                 LineItems = new List<Stripe.Checkout.SessionLineItemOptions>(),
                 Mode = "payment",
             };
@@ -238,6 +237,14 @@ namespace BulkyWeb.Areas.Admin.Controllers
         }
 
         #endregion
+
+        // Stripe sends the company user back to these pages after "Pay now". They are built from the current request
+        // (scheme + host) and the app's routes, so they work on any domain or port, not only https://localhost:7197.
+        internal string GetPaymentConfirmationUrl(int orderHeaderId) =>
+            Url.Action(nameof(PaymentConfirmation), "Order", new { area = "Admin", orderHeaderId }, Request.Scheme)!;
+
+        internal string GetOrderDetailsUrl(int orderId) =>
+            Url.Action(nameof(Details), "Order", new { area = "Admin", orderId }, Request.Scheme)!;
 
         /// <summary>
         /// Loads an order only if the current user may access it:

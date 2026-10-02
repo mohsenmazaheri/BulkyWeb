@@ -21,6 +21,11 @@
 		<PackageReference Include="Stripe.net" Version="50.4.1" />
 	</ItemGroup>
 
+	<!-- Lets the unit tests call internal helpers (e.g. the Stripe return URL builders) -->
+	<ItemGroup>
+	  <InternalsVisibleTo Include="Bulky.Tests" />
+	</ItemGroup>
+
 	<ItemGroup>
 	  <ProjectReference Include="..\Bulky.DataAccess\Bulky.DataAccess.csproj" />
 	  <ProjectReference Include="..\Bulky.Models\Bulky.Models.csproj" />
