@@ -69,13 +69,16 @@ namespace BulkyWeb.Areas.Admin.Controllers
                 if(file!= null)
                 {
                     string fileName = Guid.NewGuid().ToString() + Path.GetExtension(file.FileName);
-                    string productPath = Path.Combine(wwwRootPath, @"images\product");
+                    // Same casing as the folder in the repo: Linux file systems are case-sensitive
+                    string productPath = Path.Combine(wwwRootPath, "Images", "Product");
+                    // The folder is git-ignored, so it does not exist after a fresh clone
+                    Directory.CreateDirectory(productPath);
 
                     if (!string.IsNullOrEmpty(productVM.Product.ImageURL))
                     {
-                        // First delete the old  
-                        var oldImagePath = Path.Combine(wwwRootPath, productVM.Product.ImageURL.TrimStart('\\'));
-                        if(System.IO.File.Exists(oldImagePath))
+                        // First delete the old
+                        var oldImagePath = GetImageFilePath(productVM.Product.ImageURL);
+                        if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
                             System.IO.File.Delete(oldImagePath);
                     }
                     using(var fileStream = new FileStream(Path.Combine(productPath, fileName), FileMode.Create))
@@ -83,7 +86,8 @@ namespace BulkyWeb.Areas.Admin.Controllers
                         file.CopyTo(fileStream);
                     }
 
-                    productVM.Product.ImageURL = @"\images\product\" + fileName;
+                    // URLs use forward slashes; "\" only worked because Windows browsers convert it
+                    productVM.Product.ImageURL = "/Images/Product/" + fileName;
                 }
 
                 if (productVM.Product.Id == 0) //ADD
@@ -159,14 +163,34 @@ namespace BulkyWeb.Areas.Admin.Controllers
                 return Json(new { success = false, message = "Error while deleting"}); 
             }
 
-            var oldImagePath = Path.Combine(_webHostEnvironment.WebRootPath, productToBeDeleted.ImageURL.TrimStart('\\'));
-            if (System.IO.File.Exists(oldImagePath))
-                System.IO.File.Delete(oldImagePath);
+            if (!string.IsNullOrEmpty(productToBeDeleted.ImageURL))
+            {
+                var oldImagePath = GetImageFilePath(productToBeDeleted.ImageURL);
+                if (oldImagePath != null && System.IO.File.Exists(oldImagePath))
+                    System.IO.File.Delete(oldImagePath);
+            }
 
             _unitOfWork.Product.Remove(productToBeDeleted);
             _unitOfWork.Save();
             return Json(new { success = true, message = "Deleted Successfully" });
         }
         #endregion
+
+        /// <summary>
+        /// Converts a stored image URL ("/Images/Product/x.jpg", or the older "\images\product\x.jpg")
+        /// into a file path, or returns null when it does not point inside wwwroot/Images/Product.
+        /// On edit the URL comes from a hidden form field, so a tampered value such as
+        /// "../../appsettings.json" or "C:/..." must never reach File.Delete.
+        /// </summary>
+        private string? GetImageFilePath(string imageUrl)
+        {
+            var relativePath = imageUrl.TrimStart('/', '\\').Replace('\\', '/');
+            var fullPath = Path.GetFullPath(Path.Combine(_webHostEnvironment.WebRootPath, relativePath));
+
+            var imagesFolder = Path.GetFullPath(Path.Combine(_webHostEnvironment.WebRootPath, "Images", "Product"))
+                + Path.DirectorySeparatorChar;
+            // Ignore case: older rows were stored as "\images\product\..." and Windows paths are case-insensitive
+            return fullPath.StartsWith(imagesFolder, StringComparison.OrdinalIgnoreCase) ? fullPath : null;
+        }
     }
 }

@@ -195,6 +195,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
             return View(id);
         }
 
+        [HttpPost]
         public IActionResult Plus(int cartId)
         {
             var userId = User.GetUserId();
@@ -209,6 +210,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
         public IActionResult Minus(int cartId)
         {
             var userId = User.GetUserId();
@@ -231,6 +233,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
         public IActionResult Remove(int cartId)
         {
             var userId = User.GetUserId();

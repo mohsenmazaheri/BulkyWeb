@@ -1,11 +1,14 @@
 ﻿@using Microsoft.AspNetCore.Http
 @inject IHttpContextAccessor HttpContextAccessor
+@inject Microsoft.AspNetCore.Antiforgery.IAntiforgery Antiforgery
 
 <!DOCTYPE html>
 <html lang="en">
 <head>
 	<meta charset="utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	@* Anti-forgery token for AJAX requests; site.js sends it in the RequestVerificationToken header *@
+	<meta name="csrf-token" content="@Antiforgery.GetAndStoreTokens(Context).RequestToken" />
 	<title>@ViewData["Title"] - BulkyWeb</title>
 	<link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.css" />
 	<link rel="stylesheet" href="~/BulkyWeb.styles.css" asp-append-version="true" />
@@ -88,7 +91,6 @@
 	<script src="~/js/site.js" asp-append-version="true"></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 	<script src="//cdn.datatables.net/2.3.5/js/dataTables.min.js" asp-append-version="true"></script>
-	<script src="https://cdn.tiny.cloud/1/sscw9ft0oara0whniwtscbn62jutjkxirp4wgsw622qulf2k/tinymce/8/tinymce.min.js" referrerpolicy="origin" crossorigin="anonymous"></script>
 	@await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
