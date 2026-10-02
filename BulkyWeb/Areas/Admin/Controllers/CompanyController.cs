@@ -86,7 +86,19 @@ namespace BulkyWeb.Areas.Admin.Controllers
             var companyToBeDeleted = _unitOfWork.Company.Get(a => a.Id == id);
             if (companyToBeDeleted == null)
             {
-                return Json(new { success = false, message = "Error while deleting"}); 
+                return Json(new { success = false, message = "Error while deleting"});
+            }
+
+            // Company users have orders that are paid later, and the database blocks deleting a company
+            // that users still belong to. Explain that instead of failing with a server error.
+            var userCount = _unitOfWork.ApplicationUser.GetAll(u => u.CompanyId == companyToBeDeleted.Id).Count();
+            if (userCount > 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = $"\"{companyToBeDeleted.Name}\" cannot be deleted because {userCount} user(s) belong to it."
+                });
             }
 
             _unitOfWork.Company.Remove(companyToBeDeleted);

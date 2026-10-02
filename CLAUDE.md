@@ -93,6 +93,12 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
   - The folder is git-ignored and is created on upload with `Directory.CreateDirectory`.
   - Old files are deleted on replace or delete, but only through `ProductController.GetImageFilePath`. On edit the old URL comes from a hidden form field, so that method returns null for any path outside `wwwroot/Images/Product`.
   - Views render covers with `Url.ProductImage(product.ImageURL)` (`BulkyWeb/Extensions/UrlHelperExtensions.cs`). It falls back to `~/Images/book.png` when `ImageURL` is empty, as it is for every seeded product.
+- **Deletes never remove order history.**
+  - Products are **soft-deleted** (`Product.IsDeleted`). The admin `Delete` sets the flag and removes the product from all carts.
+  - Every query for the store or the admin list must filter `!p.IsDeleted` explicitly. Order queries must **not** filter, so old orders still show what was bought.
+  - Do not use a global `HasQueryFilter` for this. `OrderDetail.Product` is required, so a filter would silently drop order lines.
+  - `OrderDetail → Product` and `Product → Category` are `DeleteBehavior.Restrict`.
+  - Deleting a category with products, or a company with users, is refused with a message (TempData error, or `{ success: false, message }` for AJAX, which product.js/company.js show as an error toast).
 - **Cart count** is cached in session under `SD.SessionCart` and rendered by `ViewComponents/ShoppingCartViewComponent`. Any code that adds or removes cart items must update the session value, as `HomeController.Details` (POST) and `CartController.Minus/Remove` do.
 - **Pricing tiers.** `Product` has `Price`, `Price50` and `Price100`. `CartController.GetPriceBasedOnQuantity` picks one based on quantity.
 - **Orders / Stripe.** Regular customers pay immediately through a Stripe Checkout session (`CartController.SummaryPOST` → `OrderConfirmation`). Company users get delayed payment (`SD.PaymentStatusDelayedPayment`) and pay later from `Admin/Order/Details` (`DetailsPayNow` → `PaymentConfirmation`). Order status transitions go through `OrderHeaderRepository.UpdateStatus` / `UpdateStripePaymentId`. Cancelling a paid order issues a Stripe refund.

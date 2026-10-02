@@ -23,15 +23,19 @@ namespace BulkyWeb.Areas.Customer.Controllers
         public IActionResult Index()
         {
             
-            IEnumerable<Product> productList = _unitOfWork.Product.GetAll(includeProperties: "Category");
+            IEnumerable<Product> productList = _unitOfWork.Product.GetAll(p => !p.IsDeleted, includeProperties: "Category");
             return View(productList);
         }
 
         public IActionResult Details(int productId)
         {
+            var product = _unitOfWork.Product.Get(a => a.Id == productId && !a.IsDeleted, includeProperties: "Category");
+            if (product == null)
+                return NotFound();
+
             ShoppingCart shoppingCart = new()
             {
-                Product = _unitOfWork.Product.Get(a => a.Id == productId, includeProperties: "Category"),
+                Product = product,
                 Count = 1,
                 ProductId = productId
             };
@@ -42,6 +46,10 @@ namespace BulkyWeb.Areas.Customer.Controllers
         [Authorize]
         public IActionResult Details(ShoppingCart shoppingCart)
         {
+            // The product id comes from the form: it must be a product that is still for sale
+            if (_unitOfWork.Product.Get(p => p.Id == shoppingCart.ProductId && !p.IsDeleted) == null)
+                return NotFound();
+
             var userId = User.GetUserId();
             shoppingCart.ApplicationUserId = userId;
 

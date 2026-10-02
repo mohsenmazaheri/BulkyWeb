@@ -23,6 +23,16 @@ namespace Bulky.DataAccess.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Deletes must never remove order history. Instead of cascading, the database refuses to delete
+            // a category that still has products, or a product that appears in an order.
+            // (Products are soft-deleted with IsDeleted instead.)
+            modelBuilder.Entity<Product>()
+                .HasOne(p => p.Category).WithMany().HasForeignKey(p => p.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<OrderDetail>()
+                .HasOne(d => d.Product).WithMany().HasForeignKey(d => d.ProductId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             modelBuilder.Entity<Category>().HasData(
                 new Category { Id = 1, Name = "Action", DisplayOrder = 1 },
                 new Category { Id = 2, Name = "SciFi", DisplayOrder = 2 },

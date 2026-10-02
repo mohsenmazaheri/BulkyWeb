@@ -343,6 +343,9 @@ namespace Bulky.Migrations.MariaDb.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<double>("ListPrice")
                         .HasColumnType("double");
 
@@ -374,6 +377,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             Description = "Presents vitae sodales libro.",
                             ISBN = "SWD99999001",
                             ImageURL = "",
+                            IsDeleted = false,
                             ListPrice = 99.0,
                             Price = 90.0,
                             Price100 = 80.0,
@@ -388,6 +392,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             Description = "Presents dark skies.",
                             ISBN = "SWD777777001",
                             ImageURL = "",
+                            IsDeleted = false,
                             ListPrice = 40.0,
                             Price = 30.0,
                             Price100 = 20.0,
@@ -402,6 +407,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             Description = "Presents a romantic story.",
                             ISBN = "SWD555555501",
                             ImageURL = "",
+                            IsDeleted = false,
                             ListPrice = 55.0,
                             Price = 50.0,
                             Price100 = 40.0,
@@ -416,6 +422,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             Description = "A dark story.",
                             ISBN = "SWD12323423401",
                             ImageURL = "",
+                            IsDeleted = false,
                             ListPrice = 5.5,
                             Price = 5.0,
                             Price100 = 4.0,
@@ -603,7 +610,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                     b.HasOne("Bulky.Models.Product", "Product")
                         .WithMany()
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("OrderHeader");
@@ -627,7 +634,7 @@ namespace Bulky.Migrations.MariaDb.Migrations
                     b.HasOne("Bulky.Models.Category", "Category")
                         .WithMany()
                         .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Category");
