@@ -191,9 +191,9 @@ namespace BulkyWeb.Areas.Admin.Controllers
                 // session.PaymentStatus is "paid" or "unpaid" or "no_payment_required"
                 if (session.PaymentStatus.ToLower() == "paid")
                 {
-                    _unitOfWork.OrderHeader.UpdateStripePaymentId(orderHeaderId, session.Id, session.PaymentIntentId);
-                    _unitOfWork.OrderHeader.UpdateStatus(orderHeaderId, orderHeader.OrderStatus, SD.PaymentStatusApproved);
-                    _unitOfWork.Save();
+                    // The Stripe webhook may already have recorded this payment; MarkPaid then does nothing
+                    if (_unitOfWork.OrderHeader.MarkPaid(orderHeaderId, session.Id, session.PaymentIntentId))
+                        _unitOfWork.Save();
                 }
             }
 
