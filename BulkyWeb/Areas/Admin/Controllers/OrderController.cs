@@ -203,41 +203,38 @@ namespace BulkyWeb.Areas.Admin.Controllers
         #region API CALLS
 
         [HttpGet]
-        public IActionResult GetAll(string status)
+        public IActionResult GetAll(string? status)
         {
-            IEnumerable<OrderHeader> orderHeaders = null;
+            // Staff see every order, everyone else only their own
+            var userId = User.IsStaff() ? null : User.GetUserId();
+            IEnumerable<OrderHeader> orderHeaders = _unitOfWork.OrderHeader.GetAll(
+                userId == null ? null : o => o.ApplicationUserId == userId,
+                includeProperties: "ApplicationUser");
 
-            if (User.IsStaff())
-                orderHeaders = _unitOfWork.OrderHeader.GetAll(null, includeProperties: "ApplicationUser").ToList();
-            else
+            // The tabs on the Manage Order page. "pending" is about payment: company orders that are paid later.
+            // The others are about the order itself, so they compare OrderStatus.
+            orderHeaders = status switch
             {
-                var userId = User.GetUserId();
-                orderHeaders = _unitOfWork.OrderHeader.GetAll(a => a.ApplicationUserId == userId, includeProperties: "ApplicationUser");
-            }
+                "pending" => orderHeaders.Where(o => o.PaymentStatus == SD.PaymentStatusDelayedPayment),
+                "inprocess" => orderHeaders.Where(o => o.OrderStatus == SD.StatusInProcess),
+                "completed" => orderHeaders.Where(o => o.OrderStatus == SD.StatusShipped),
+                "approved" => orderHeaders.Where(o => o.OrderStatus == SD.StatusApproved),
+                _ => orderHeaders
+            };
 
-            if (orderHeaders != null)
+            // Only the columns the DataTable shows (order.js). Serializing the entities would also send
+            // the whole ApplicationUser, including its PasswordHash and SecurityStamp, to the browser.
+            var rows = orderHeaders.Select(o => new
             {
-                switch (status)
-                {
-                    case "pending":
-                        orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.PaymentStatusDelayedPayment);
-                        //orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusPending);
-                        break;
-                    case "inprocess":
-                        orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusInProcess);
-                        break;
-                    case "completed":
-                        orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusShipped);
-                        break;
-                    case "approved":
-                        orderHeaders = orderHeaders.Where(o => o.PaymentStatus == SD.StatusApproved);
-                        break;
-                    default:
-                        break;
-                }
-            }
+                o.Id,
+                o.Name,
+                o.PhoneNumber,
+                ApplicationUser = new { o.ApplicationUser.Email },
+                o.OrderStatus,
+                o.OrderTotal
+            });
 
-            return Json(new { data = orderHeaders });
+            return Json(new { data = rows });
         }
 
         #endregion
