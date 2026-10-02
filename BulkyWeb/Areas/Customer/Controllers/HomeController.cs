@@ -51,20 +51,35 @@ namespace BulkyWeb.Areas.Customer.Controllers
                 return NotFound();
 
             var userId = User.GetUserId();
-            shoppingCart.ApplicationUserId = userId;
 
+            // [Range(1, 1000)] on ShoppingCart.Count is only enforced in the browser: check it here too,
+            // otherwise a posted Count=-5 puts "minus five books" in the cart (and a negative total in the order)
+            const int MaxQuantity = 1000;
             ShoppingCart cartFromDB = _unitOfWork.ShoppingCart.Get(a => a.ApplicationUserId == userId && a.ProductId == shoppingCart.ProductId);
+            var newCount = (cartFromDB?.Count ?? 0) + shoppingCart.Count;
+            if (shoppingCart.Count < 1 || newCount > MaxQuantity)
+            {
+                TempData["error"] = $"Please choose a quantity between 1 and {MaxQuantity} per book.";
+                return RedirectToAction(nameof(Details), new { productId = shoppingCart.ProductId });
+            }
+
             // If the product already exists in the shopping cart,
             // We must Update its count
             if (cartFromDB != null)
             {
-                cartFromDB.Count += shoppingCart.Count;
+                cartFromDB.Count = newCount;
                 _unitOfWork.ShoppingCart.Update(cartFromDB);
                 _unitOfWork.Save();
             }
             else // It's new prosuct, So, Add it
             {
-                _unitOfWork.ShoppingCart.Add(shoppingCart);
+                // A new row with only the product and quantity from the form: a posted Id or owner is never saved
+                _unitOfWork.ShoppingCart.Add(new ShoppingCart
+                {
+                    ApplicationUserId = userId,
+                    ProductId = shoppingCart.ProductId,
+                    Count = shoppingCart.Count
+                });
                 _unitOfWork.Save();
                 // Adding the number of the cart items to the session
                 HttpContext.Session.SetInt32(SD.SessionCart, _unitOfWork.ShoppingCart.GetAll(a => a.ApplicationUserId == userId).Count());

@@ -93,6 +93,11 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
   - The folder is git-ignored and is created on upload with `Directory.CreateDirectory`.
   - Old files are deleted on replace or delete, but only through `ProductController.GetImageFilePath`. On edit the old URL comes from a hidden form field, so that method returns null for any path outside `wwwroot/Images/Product`.
   - Views render covers with `Url.ProductImage(product.ImageURL)` (`BulkyWeb/Extensions/UrlHelperExtensions.cs`). It falls back to `~/Images/book.png` when `ImageURL` is empty, as it is for every seeded product.
+- **Never save a model-bound object directly (over-posting).** Model binding fills every posted property, not only the fields in the form.
+  - Build the entity from the fields that may come from the form. See `CartController.SummaryPOST` (only the 6 shipping fields) and `HomeController.Details` POST (only ProductId and Count).
+  - Re-check validation rules on the server. `[Range]` and `[Required]` only stop honest browsers, and unit tests do not run them.
+- **Save related rows in one `_unitOfWork.Save()`.** One SaveChanges runs in a single transaction. Link children through the navigation property (`OrderDetail.OrderHeader = header`) instead of saving the parent first to get its id.
+  - Never keep a transaction open while calling an external service (Stripe). Save first, then call out.
 - **Deletes never remove order history.**
   - Products are **soft-deleted** (`Product.IsDeleted`). The admin `Delete` sets the flag and removes the product from all carts.
   - Every query for the store or the admin list must filter `!p.IsDeleted` explicitly. Order queries must **not** filter, so old orders still show what was bought.

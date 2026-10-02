@@ -10,10 +10,11 @@ namespace Bulky.Tests.Helpers
     /// </summary>
     public static class TestDb
     {
-        public static ApplicationDbContext Create()
+        public static ApplicationDbContext Create(params Microsoft.EntityFrameworkCore.Diagnostics.IInterceptor[] interceptors)
         {
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .AddInterceptors(interceptors)
                 .Options;
             return new ApplicationDbContext(options);
         }

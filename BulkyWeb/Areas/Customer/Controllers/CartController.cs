@@ -76,52 +76,70 @@ namespace BulkyWeb.Areas.Customer.Controllers
         {
             var userId = User.GetUserId();
 
-            ShoppingCartVM.ShoppingCartList = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId,
-                includeProperties: "Product");
+            var cartItems = _unitOfWork.ShoppingCart.GetAll(u => u.ApplicationUserId == userId,
+                includeProperties: "Product").ToList();
+            if (cartItems.Count == 0)
+            {
+                TempData["error"] = "Your cart is empty.";
+                return RedirectToAction(nameof(Index));
+            }
 
-            ShoppingCartVM.OrderHeader.OrderDate = DateTime.Now;
-            ShoppingCartVM.OrderHeader.ApplicationUserId =userId;
+            // Only the six shipping fields come from the form. Model binding would fill ANY OrderHeader property
+            // that is posted (Id, OrderTotal, PaymentStatus, PaymentIntentId...), so the order is built from
+            // scratch instead of saving the bound object (over-posting / mass assignment).
+            var shipping = ShoppingCartVM.OrderHeader;
+            if (new[] { shipping.Name, shipping.PhoneNumber, shipping.StreetAddress, shipping.City, shipping.State, shipping.PostalCode }
+                .Any(string.IsNullOrWhiteSpace))
+            {
+                TempData["error"] = "Please fill in all shipping details.";
+                return RedirectToAction(nameof(Summary));
+            }
 
-            ApplicationUser applicationUser = _unitOfWork.ApplicationUser.Get(a => a.Id == userId);
+            var applicationUser = _unitOfWork.ApplicationUser.Get(a => a.Id == userId);
+            var isCompany = applicationUser.CompanyId.GetValueOrDefault() != 0;
 
-            foreach (var item in ShoppingCartVM.ShoppingCartList)
+            var orderHeader = new OrderHeader
+            {
+                ApplicationUserId = userId,
+                OrderDate = DateTime.Now,
+                Name = shipping.Name,
+                PhoneNumber = shipping.PhoneNumber,
+                StreetAddress = shipping.StreetAddress,
+                City = shipping.City,
+                State = shipping.State,
+                PostalCode = shipping.PostalCode,
+                // Company users get the order approved now and pay later; everyone else pays now
+                OrderStatus = isCompany ? SD.StatusApproved : SD.StatusPending,
+                PaymentStatus = isCompany ? SD.PaymentStatusDelayedPayment : SD.PaymentStatusPending
+            };
+            _unitOfWork.OrderHeader.Add(orderHeader);
+
+            foreach (var item in cartItems)
             {
                 item.Price = GetPriceBasedOnQuantity(item);
-                ShoppingCartVM.OrderHeader.OrderTotal += item.Price * item.Count;
-            }
+                orderHeader.OrderTotal += item.Price * item.Count;
 
-            // User is a regular customer account
-            if(applicationUser.CompanyId.GetValueOrDefault() == 0)
-            {
-                ShoppingCartVM.OrderHeader.PaymentStatus = SD.PaymentStatusPending;
-                ShoppingCartVM.OrderHeader.OrderStatus = SD.StatusPending;
-            }
-            else // User is a company with delayed payment
-            {
-                ShoppingCartVM.OrderHeader.PaymentStatus = SD.PaymentStatusDelayedPayment;
-                ShoppingCartVM.OrderHeader.OrderStatus = SD.StatusApproved;
-            }
-
-            _unitOfWork.OrderHeader.Add(ShoppingCartVM.OrderHeader);
-            _unitOfWork.Save();
-
-            foreach (var item in ShoppingCartVM.ShoppingCartList)
-            {
-                OrderDetail orderDetail = new()
+                // Linked through the navigation property, so EF fills in OrderHeaderId when it saves
+                _unitOfWork.OrderDetail.Add(new OrderDetail
                 {
+                    OrderHeader = orderHeader,
                     ProductId = item.ProductId,
-                    OrderHeaderId = ShoppingCartVM.OrderHeader.Id,
                     Price = item.Price,
                     Count = item.Count
-                };
-                _unitOfWork.OrderDetail.Add(orderDetail);
-                _unitOfWork.Save();
+                });
             }
 
+            // ONE SaveChanges for the header and all lines: EF Core runs it in a single database transaction,
+            // so either the whole order is saved or nothing is (no half-saved orders).
+            _unitOfWork.Save();
+            ShoppingCartVM.OrderHeader = orderHeader;
+            ShoppingCartVM.ShoppingCartList = cartItems;
+
             // User is a regular customer account and we need to capture payment
-            if (applicationUser.CompanyId.GetValueOrDefault() == 0)
+            if (!isCompany)
             {
-                // Stripe Logic
+                // Stripe Logic. The call to Stripe happens after the order is saved, outside the database
+                // transaction: holding a transaction open while waiting for another server would block the database.
                 var options = new Stripe.Checkout.SessionCreateOptions
                 {
                     SuccessUrl = GetOrderConfirmationUrl(ShoppingCartVM.OrderHeader.Id),
@@ -154,7 +172,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
                 _unitOfWork.OrderHeader.UpdateStripePaymentId(ShoppingCartVM.OrderHeader.Id, session.Id, session.PaymentIntentId);
                 _unitOfWork.Save();
 
-                Response.Headers.Add("Location", session.Url);
+                Response.Headers.Location = session.Url;
                 return new StatusCodeResult(303);
             }
 
