@@ -19,6 +19,15 @@ namespace Bulky.DataAccess.Data
         public DbSet<OrderHeader> OrderHeaders { get; set; }
         public DbSet<OrderDetail> OrderDetails { get; set; }
 
+        /// <summary>
+        /// Every decimal (all money values) is stored as decimal(18, 2) on both SQL Server and MariaDB.
+        /// Without it, SQL Server would pick a default precision and EF Core warns about it.
+        /// </summary>
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            configurationBuilder.Properties<decimal>().HavePrecision(18, 2);
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -122,9 +131,9 @@ namespace Bulky.DataAccess.Data
                      Author = "Sadegh Hedayat",
                      Description = "A dark story.",
                      ISBN = "SWD12323423401",
-                     ListPrice = 5.5,
+                     ListPrice = 5.5m,
                      Price = 5,
-                     Price50 = 4.5,
+                     Price50 = 4.5m,
                      Price100 = 4,
                      CategoryId = 3,
                      ImageURL = ""

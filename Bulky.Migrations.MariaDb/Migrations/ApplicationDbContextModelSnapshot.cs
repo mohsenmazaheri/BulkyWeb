@@ -225,8 +225,9 @@ namespace Bulky.Migrations.MariaDb.Migrations
                     b.Property<int>("OrderHeaderId")
                         .HasColumnType("int");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("double");
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
@@ -269,8 +270,9 @@ namespace Bulky.Migrations.MariaDb.Migrations
                     b.Property<string>("OrderStatus")
                         .HasColumnType("longtext");
 
-                    b.Property<double>("OrderTotal")
-                        .HasColumnType("double");
+                    b.Property<decimal>("OrderTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("PaymentDate")
                         .HasColumnType("datetime(6)");
@@ -346,17 +348,21 @@ namespace Bulky.Migrations.MariaDb.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("tinyint(1)");
 
-                    b.Property<double>("ListPrice")
-                        .HasColumnType("double");
+                    b.Property<decimal>("ListPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<double>("Price")
-                        .HasColumnType("double");
+                    b.Property<decimal>("Price")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<double>("Price100")
-                        .HasColumnType("double");
+                    b.Property<decimal>("Price100")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
-                    b.Property<double>("Price50")
-                        .HasColumnType("double");
+                    b.Property<decimal>("Price50")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -378,10 +384,10 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             ISBN = "SWD99999001",
                             ImageURL = "",
                             IsDeleted = false,
-                            ListPrice = 99.0,
-                            Price = 90.0,
-                            Price100 = 80.0,
-                            Price50 = 85.0,
+                            ListPrice = 99m,
+                            Price = 90m,
+                            Price100 = 80m,
+                            Price50 = 85m,
                             Title = "Fortune of Time"
                         },
                         new
@@ -393,10 +399,10 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             ISBN = "SWD777777001",
                             ImageURL = "",
                             IsDeleted = false,
-                            ListPrice = 40.0,
-                            Price = 30.0,
-                            Price100 = 20.0,
-                            Price50 = 25.0,
+                            ListPrice = 40m,
+                            Price = 30m,
+                            Price100 = 20m,
+                            Price50 = 25m,
                             Title = "Dark Skies"
                         },
                         new
@@ -408,10 +414,10 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             ISBN = "SWD555555501",
                             ImageURL = "",
                             IsDeleted = false,
-                            ListPrice = 55.0,
-                            Price = 50.0,
-                            Price100 = 40.0,
-                            Price50 = 45.0,
+                            ListPrice = 55m,
+                            Price = 50m,
+                            Price100 = 40m,
+                            Price50 = 45m,
                             Title = "Vanish in the Sunset"
                         },
                         new
@@ -423,10 +429,10 @@ namespace Bulky.Migrations.MariaDb.Migrations
                             ISBN = "SWD12323423401",
                             ImageURL = "",
                             IsDeleted = false,
-                            ListPrice = 5.5,
-                            Price = 5.0,
-                            Price100 = 4.0,
-                            Price50 = 4.5,
+                            ListPrice = 5.5m,
+                            Price = 5m,
+                            Price100 = 4m,
+                            Price50 = 4.5m,
                             Title = "Blind Owl"
                         });
                 });

@@ -139,8 +139,10 @@ namespace Bulky.Tests.Controllers
         [InlineData(51, 30)]   // 51-100 books: Price50
         [InlineData(100, 30)]
         [InlineData(101, 20)]  // more than 100 books: Price100
-        public void Index_UsesPriceTierForQuantity(int count, double expectedPrice)
+        public void Index_UsesPriceTierForQuantity(int count, int expectedPriceInDollars)
         {
+            // InlineData cannot hold decimal constants; whole dollar amounts convert exactly
+            decimal expectedPrice = expectedPriceInDollars;
             _db.ShoppingCarts.Add(new ShoppingCart { Id = 10, ProductId = 1, ApplicationUserId = UserA, Count = count });
             _db.SaveAndDetach();
 
@@ -149,6 +151,22 @@ namespace Bulky.Tests.Controllers
             var model = Assert.IsType<ShoppingCartVM>(view.Model);
             Assert.Equal(expectedPrice, model.ShoppingCartList.Single().Price);
             Assert.Equal(expectedPrice * count, model.OrderHeader.OrderTotal);
+        }
+
+        [Fact]
+        public void Index_TotalOfCentAmounts_IsExact()
+        {
+            // With double, 0.1 + 0.2 is 0.30000000000000004; cart totals must add up exactly
+            _db.Products.Add(TestDb.Product(3, price: 0.10m));
+            _db.Products.Add(TestDb.Product(4, price: 0.20m));
+            _db.ShoppingCarts.AddRange(
+                new ShoppingCart { Id = 10, ProductId = 3, ApplicationUserId = UserA, Count = 1 },
+                new ShoppingCart { Id = 11, ProductId = 4, ApplicationUserId = UserA, Count = 1 });
+            _db.SaveAndDetach();
+
+            var view = Assert.IsType<ViewResult>(CreateController(UserA).Index());
+
+            Assert.Equal(0.30m, Assert.IsType<ShoppingCartVM>(view.Model).OrderHeader.OrderTotal);
         }
 
         // ---------- Lesson 01 Part D: order confirmation ----------
