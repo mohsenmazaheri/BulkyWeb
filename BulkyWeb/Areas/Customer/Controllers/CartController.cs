@@ -137,7 +137,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
                     {
                         PriceData = new SessionLineItemPriceDataOptions
                         {
-                            UnitAmount = (long)(item.Price * 100), // $20.50 ==> 2050
+                            UnitAmount = Money.ToStripeAmount(item.Price), // $20.50 ==> 2050 (exact: decimal, not double)
                             Currency = "usd",
                             ProductData = new SessionLineItemPriceDataProductDataOptions
                             {
@@ -247,7 +247,7 @@ namespace BulkyWeb.Areas.Customer.Controllers
             return RedirectToAction(nameof(Index));
         }
 
-        private double GetPriceBasedOnQuantity(ShoppingCart shoppingCart)
+        private decimal GetPriceBasedOnQuantity(ShoppingCart shoppingCart)
         {
             if(shoppingCart.Count <= 50)
                 return shoppingCart.Product.Price;

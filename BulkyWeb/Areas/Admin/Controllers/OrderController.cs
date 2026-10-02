@@ -155,7 +155,7 @@ namespace BulkyWeb.Areas.Admin.Controllers
                 {
                     PriceData = new SessionLineItemPriceDataOptions
                     {
-                        UnitAmount = (long)(item.Price * 100), // $20.50 ==> 2050
+                        UnitAmount = Money.ToStripeAmount(item.Price), // $20.50 ==> 2050 (exact: decimal, not double)
                         Currency = "usd",
                         ProductData = new SessionLineItemPriceDataProductDataOptions
                         {

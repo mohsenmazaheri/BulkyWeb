@@ -100,6 +100,11 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
   - `OrderDetail → Product` and `Product → Category` are `DeleteBehavior.Restrict`.
   - Deleting a category with products, or a company with users, is refused with a message (TempData error, or `{ success: false, message }` for AJAX, which product.js/company.js show as an error toast).
 - **Cart count** is cached in session under `SD.SessionCart` and rendered by `ViewComponents/ShoppingCartViewComponent`. Any code that adds or removes cart items must update the session value, as `HomeController.Details` (POST) and `CartController.Minus/Remove` do.
+- **Money is always `decimal`, never `double`.**
+  - `ApplicationDbContext.ConfigureConventions` stores every `decimal` as `decimal(18,2)`.
+  - Decimal literals need the `m` suffix (`5.5m`).
+  - Convert amounts for Stripe only with `Money.ToStripeAmount(amount)` (`Bulky.Utility/Money.cs`), which rounds to whole cents.
+  - When a migration changes seeded columns, EF may add `UpdateData` calls that overwrite seeded rows. Remove them if they would reset data an admin may have edited (see `MoneyAsDecimal`).
 - **Pricing tiers.** `Product` has `Price`, `Price50` and `Price100`. `CartController.GetPriceBasedOnQuantity` picks one based on quantity.
 - **Orders / Stripe.** Regular customers pay immediately through a Stripe Checkout session (`CartController.SummaryPOST` → `OrderConfirmation`). Company users get delayed payment (`SD.PaymentStatusDelayedPayment`) and pay later from `Admin/Order/Details` (`DetailsPayNow` → `PaymentConfirmation`). Order status transitions go through `OrderHeaderRepository.UpdateStatus` / `UpdateStripePaymentId`. Cancelling a paid order issues a Stripe refund.
 - The front end uses Bootstrap (the site CSS is based on a Bootswatch theme, and reference files are in `BulkyWeb/Documents/`), Bootstrap Icons, jQuery, Toastr, SweetAlert2, DataTables and TinyMCE. Everything except jQuery/Bootstrap comes from CDNs in `_Layout.cshtml`. TinyMCE is the exception: it is loaded only in `Admin/Views/Product/Upsert.cshtml`.

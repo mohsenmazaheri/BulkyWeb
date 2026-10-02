@@ -37,7 +37,7 @@ namespace Bulky.Tests.Helpers
             Name = id
         };
 
-        public static Product Product(int id, double price = 40, double price50 = 30, double price100 = 20) => new()
+        public static Product Product(int id, decimal price = 40, decimal price50 = 30, decimal price100 = 20) => new()
         {
             Id = id,
             Title = $"Book {id}",

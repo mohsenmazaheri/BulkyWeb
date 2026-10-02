@@ -23,6 +23,6 @@ namespace Bulky.Models
         public ApplicationUser ApplicationUser { get; set; }
 
         [NotMapped] // It is just for show usage, it is not added to DB
-        public double Price { get; set; }
+        public decimal Price { get; set; }
     }
 }
