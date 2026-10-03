@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /BulkyWeb/wwwroot/Images/Product
 /Stripe.txt
+
+# Docker Compose secrets (see .env.example)
+.env

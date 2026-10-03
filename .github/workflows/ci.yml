@@ -57,3 +57,52 @@ jobs:
             echo "::error::Vulnerable NuGet packages found, see the list above"
             exit 1
           fi
+
+  # Lesson 17: build the Docker image and run the app with a real MariaDB, like a deployment would
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Create .env with throwaway passwords for this run
+        run: |
+          cat > .env <<'EOF'
+          DB_PASSWORD=ci-db-password
+          DB_ROOT_PASSWORD=ci-root-password
+          ADMIN_PASSWORD=Ci-Admin-Passw0rd!
+          EOF
+
+      - name: Build the image and start app + MariaDB
+        run: docker compose up --build --detach
+
+      - name: Wait until /health reports healthy (app running, database reachable)
+        run: |
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://localhost:8080/health; then echo; echo "healthy after $i tries"; exit 0; fi
+            sleep 3
+          done
+          echo "::error::The app did not become healthy"
+          exit 1
+
+      - name: The store shows the seeded books
+        run: curl --fail --silent http://localhost:8080/ | grep --quiet "Fortune of Time"
+
+      - name: The container runs as a non-root user
+        run: test "$(docker compose exec -T web id -u)" != "0"
+
+      - name: Restart the app container; keys and data must survive
+        run: |
+          docker compose exec -T web ls /app/keys | grep --quiet "key-"
+          docker compose restart web
+          for i in $(seq 1 40); do curl --fail --silent http://localhost:8080/health && exit 0; sleep 3; done
+          exit 1
+
+      - name: Show container logs
+        if: always()
+        run: docker compose logs
+
+      - name: Stop and remove containers and volumes
+        if: always()
+        run: docker compose down --volumes

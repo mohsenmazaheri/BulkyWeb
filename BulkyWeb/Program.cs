@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Identity;
 using Bulky.Models;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using BulkyWeb.HealthChecks;
 using Stripe;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -52,6 +54,19 @@ builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IEmailSender<IdentityUser>, EmailSender>();
 builder.Services.AddScoped<IEmailSender, IdentityUiEmailSenderAdapter>();
 
+// GET /health: lets Docker, CI and hosting platforms check that the app runs and reaches its database
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database");
+
+// Login cookies and anti-forgery tokens are encrypted with "data protection" keys. By default the keys live
+// inside the container, so every new container would log everyone out. In Docker, the keys go to a volume.
+var dataProtectionKeysPath = builder.Configuration["DataProtection:KeysPath"];
+if (!string.IsNullOrEmpty(dataProtectionKeysPath))
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeysPath))
+        .SetApplicationName("BulkyWeb");
+}
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -74,6 +89,7 @@ app.UseSession();
 await SeedDatabaseAsync();
 
 app.MapRazorPages();
+app.MapHealthChecks("/health");
 
 app.MapControllerRoute(
     name: "default",
