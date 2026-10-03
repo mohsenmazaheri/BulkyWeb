@@ -1,0 +1,49 @@
+# Runs BulkyWeb with its own MariaDB 11.4:
+#   1. copy .env.example to .env and set the passwords
+#   2. docker compose up --build
+#   3. open http://localhost:8080
+services:
+  db:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: Bulky
+      # A dedicated user that only gets access to the Bulky database (least privilege, Lesson 04)
+      MARIADB_USER: bulky
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  web:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy   # start the app only when MariaDB accepts connections
+    ports:
+      - "8080:8080"
+    environment:
+      # Configuration through environment variables: "__" stands for ":" (Lesson 08)
+      DatabaseProvider: MariaDb
+      ConnectionStrings__MariaDb: "Server=db;Port=3306;Database=Bulky;User=bulky;Password=${DB_PASSWORD}"
+      AdminUser__Password: ${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in .env}
+      Stripe__SecretKey: ${STRIPE_SECRET_KEY:-}
+      Stripe__PublishableKey: ${STRIPE_PUBLISHABLE_KEY:-}
+      Stripe__WebhookSecret: ${STRIPE_WEBHOOK_SECRET:-}
+      # Lesson 14: on a real server, set this to your domain
+      AllowedHosts: ${ALLOWED_HOSTS:-*}
+    volumes:
+      # Without volumes, rebuilding the container would delete all uploaded covers and log everyone out
+      - product-images:/app/wwwroot/Images/Product
+      - dataprotection-keys:/app/keys
+
+volumes:
+  db-data:
+  product-images:
+  dataprotection-keys:

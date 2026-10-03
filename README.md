@@ -46,7 +46,8 @@ The project started from an ASP.NET Core MVC course. I then **audited it like a 
 | Payments | Stripe Checkout (Stripe.net) |
 | Front end | Bootstrap 5, jQuery, DataTables, Toastr, SweetAlert2, TinyMCE |
 | Tests | xUnit, Moq, EF Core InMemory |
-| CI | GitHub Actions (build, tests, coverage, vulnerable-package check) |
+| CI | GitHub Actions (build, tests, coverage, vulnerable-package check, Docker smoke test) |
+| Containers | Docker multi-stage image (non-root), Docker Compose with MariaDB, health checks |
 
 ---
 
@@ -92,7 +93,7 @@ Starting from a [full audit](Documents/Lesson%2000%20-%20Project%20Audit%20and%2
 | Data integrity | Orders were saved in several steps, so a failure left half-saved orders | Header and all lines saved in **one transaction** |
 | Infrastructure | SQL Server only | SQL Server **and** MariaDB, with separate migrations |
 | Dependencies | Outdated packages, one high-severity vulnerability | Updated packages, removed unused ones, CI check |
-| Quality | No tests, no CI | **103 tests**, GitHub Actions on every push and PR, protected `master` |
+| Quality | No tests, no CI | **104 tests**, GitHub Actions on every push and PR, protected `master` |
 
 ---
 
@@ -159,6 +160,20 @@ dotnet run --project BulkyWeb --launch-profile https
 
 Open https://localhost:7197. On the first start the database, tables, sample books, roles and the admin account are created automatically.
 
+### Or run everything with Docker
+
+The app and its own MariaDB 11.4 run in containers; no .NET SDK or database installation needed:
+
+```bash
+cp .env.example .env      # then set the passwords in .env
+docker compose up --build
+```
+
+Open http://localhost:8080 and log in as `admin@bulky.com` with the `ADMIN_PASSWORD` from `.env`.
+- The database, the uploaded covers and the login keys are stored in Docker volumes, so they survive restarts and rebuilds.
+- `GET /health` reports whether the app can reach its database.
+- `docker compose down --volumes` removes everything.
+
 ---
 
 ## Tests
@@ -167,7 +182,7 @@ Open https://localhost:7197. On the first start the database, tables, sample boo
 dotnet test Bulky.sln
 ```
 
-103 tests cover:
+104 tests cover:
 - the IDOR and CSRF-related rules;
 - pricing tiers at their boundaries, and exact money arithmetic;
 - soft delete and order history protection;
@@ -177,7 +192,7 @@ dotnet test Bulky.sln
 - image upload safety (including the path traversal attacks);
 - the startup initializer, run against the real ASP.NET Core Identity.
 
-They run on every push and pull request in [GitHub Actions](https://github.com/mohsenmazaheri/BulkyWeb/actions).
+They run on every push and pull request in [GitHub Actions](https://github.com/mohsenmazaheri/BulkyWeb/actions). A second CI job builds the Docker image, starts it with MariaDB, and checks `/health`, the store page, the non-root user and a restart.
 
 ## Database migrations
 
@@ -192,7 +207,7 @@ Every model change needs a migration for **both** providers. The script creates 
 ## Roadmap
 
 - Async data access and a service layer for orders and payments
-- Docker image and cloud deployment
+- Cloud deployment with a live demo
 
 ---
 

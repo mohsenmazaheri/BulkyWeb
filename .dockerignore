@@ -1,0 +1,25 @@
+# Files Docker does not send to the build. Smaller and faster builds, and no secrets or local
+# build output in the image.
+
+# Build output from the host: would overwrite the clean restore inside the container
+**/bin/
+**/obj/
+TestResults/
+
+# Not needed to run the app
+.git/
+.github/
+.vs/
+.vscode/
+Documents/
+docs/
+Bulky.Tests/
+*.md
+
+# Secrets and local settings
+.env
+**/secrets.json
+**/*.user
+
+# Uploaded covers from this machine: in Docker they live in a volume
+BulkyWeb/wwwroot/Images/Product/
