@@ -174,6 +174,14 @@ Open http://localhost:8080 and log in as `admin@bulky.com` with the `ADMIN_PASSW
 - `GET /health` reports whether the app can reach its database.
 - `docker compose down --volumes` removes everything.
 
+**Behind a VPN or proxy?** If the build hangs at `dotnet restore` with `NU1301 ... timed out`, the containers cannot reach NuGet. Compile on your PC instead and let Docker only package the result (needs the .NET 10 SDK):
+
+```cmd
+scripts\docker-prebuilt.cmd
+```
+
+It runs `dotnet publish` and then `docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up --build`.
+
 ---
 
 ## Tests
@@ -192,7 +200,7 @@ dotnet test Bulky.sln
 - image upload safety (including the path traversal attacks);
 - the startup initializer, run against the real ASP.NET Core Identity.
 
-They run on every push and pull request in [GitHub Actions](https://github.com/mohsenmazaheri/BulkyWeb/actions). A second CI job builds the Docker image, starts it with MariaDB, and checks `/health`, the store page, the non-root user and a restart.
+They run on every push and pull request in [GitHub Actions](https://github.com/mohsenmazaheri/BulkyWeb/actions). Two more CI jobs build the Docker image (normally, and from a host-compiled app), start it with MariaDB, and check `/health`, the store page, the non-root user and a restart.
 
 ## Database migrations
 

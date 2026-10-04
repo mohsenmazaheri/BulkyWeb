@@ -18,7 +18,7 @@ dotnet test Bulky.sln                             # run all unit tests
 dotnet test Bulky.Tests --filter "FullyQualifiedName~CartControllerTests"   # one test class
 ```
 
-**CI:** `.github/workflows/ci.yml` (GitHub Actions) runs on every push to `master` and every pull request. Two jobs: `build-and-test` (required by the ruleset) and `docker`.
+**CI:** `.github/workflows/ci.yml` (GitHub Actions) runs on every push to `master` and every pull request. Jobs: `build-and-test` (required by the ruleset), `docker` and `docker-prebuilt`.
 - It runs on **ubuntu-latest**: restore, Release build, all tests (TRX results plus Cobertura coverage, uploaded as the `test-results` artifact), then a vulnerable-package check that fails the run.
 - Because it runs on Linux, file paths in code and tests must use the exact folder casing.
 - Keep the solution building on Linux.
@@ -28,7 +28,10 @@ dotnet test Bulky.Tests --filter "FullyQualifiedName~CartControllerTests"   # on
 - Named volumes hold `/var/lib/mysql`, `/app/wwwroot/Images/Product` (uploads) and `/app/keys` (data protection keys, through `DataProtection:KeysPath`). Without the keys volume, every new container invalidates logins and anti-forgery tokens.
 - `GET /health` checks the database (`HealthChecks/DatabaseHealthCheck`).
 - When adding a project that BulkyWeb references, also add its .csproj to the restore layer in the Dockerfile.
-- Docker is not installed on the Windows Server dev machine. The `docker` job in CI builds and smoke-tests the image.
+- **Prebuilt variant** for networks where containers cannot reach NuGet (the user's office VPN on the router made `dotnet restore` time out inside Docker; custom DNS did not help):
+  - `Dockerfile.prebuilt` copies a host `dotnet publish` output (`publish/`, git-ignored), and `docker-compose.prebuilt.yml` overrides the web build. `scripts/docker-prebuilt.cmd` runs both.
+  - Keep its runtime setup in sync with the last stage of `Dockerfile`.
+- Docker is not installed on the Windows Server dev machine. The CI jobs `docker` and `docker-prebuilt` build and smoke-test both variants.
 
 `dotnet ef` is a local tool pinned in `dotnet-tools.json` (9.0.20, matching EF Core). On a new machine, run `dotnet tool restore` once.
 
