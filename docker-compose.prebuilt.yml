@@ -1,0 +1,8 @@
+# Override for docker-compose.yml: build the web image from the app compiled on the host (Dockerfile.prebuilt).
+# Compose merges the two files; everything else (database, settings, volumes) stays the same:
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up --build
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.prebuilt

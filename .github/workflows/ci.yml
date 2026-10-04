@@ -106,3 +106,49 @@ jobs:
       - name: Stop and remove containers and volumes
         if: always()
         run: docker compose down --volumes
+
+  # The alternative for networks where containers cannot reach NuGet: compile on the host, Docker only packages
+  docker-prebuilt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@v7
+
+      - name: Install the .NET SDK from global.json
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Compile on the host (dotnet publish)
+        run: dotnet publish BulkyWeb/BulkyWeb.csproj --configuration Release --output publish
+
+      - name: Create .env with throwaway passwords for this run
+        run: |
+          cat > .env <<'ENVFILE'
+          DB_PASSWORD=ci-db-password
+          DB_ROOT_PASSWORD=ci-root-password
+          ADMIN_PASSWORD=Ci-Admin-Passw0rd!
+          ENVFILE
+
+      - name: Build the prebuilt image and start app + MariaDB
+        run: docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up --build --detach
+
+      - name: Wait until /health reports healthy, and the store shows the seeded books
+        run: |
+          for i in $(seq 1 40); do
+            if curl --fail --silent http://localhost:8080/health; then
+              echo; curl --fail --silent http://localhost:8080/ | grep --quiet "Fortune of Time" && exit 0
+            fi
+            sleep 3
+          done
+          echo "::error::The prebuilt app did not become healthy"
+          exit 1
+
+      - name: Show container logs
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml logs
+
+      - name: Stop and remove containers and volumes
+        if: always()
+        run: docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml down --volumes

@@ -1,0 +1,23 @@
+# Packages an app that was already compiled on the host, so the image build needs no internet access.
+# Use it when containers cannot reach NuGet (e.g. behind some VPNs or proxies). Normal builds use Dockerfile.
+#
+#   dotnet publish BulkyWeb/BulkyWeb.csproj --configuration Release --output publish
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up --build
+#
+# (scripts/docker-prebuilt.cmd runs both commands.)
+
+FROM mcr.microsoft.com/dotnet/aspnet:10.0
+WORKDIR /app
+COPY publish/ .
+
+# Same runtime setup as the last stage of Dockerfile
+RUN mkdir -p /app/wwwroot/Images/Product /app/keys \
+    && chown -R "$APP_UID" /app/wwwroot/Images/Product /app/keys
+
+USER $APP_UID
+
+ENV ASPNETCORE_HTTP_PORTS=8080 \
+    DataProtection__KeysPath=/app/keys
+EXPOSE 8080
+
+ENTRYPOINT ["dotnet", "BulkyWeb.dll"]
