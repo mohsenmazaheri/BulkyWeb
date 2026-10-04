@@ -47,6 +47,8 @@ dotnet ef migrations has-pending-model-changes --project Bulky.Migrations.<Provi
 
 `DbInitializer` applies pending migrations at startup, so `database update` is rarely needed.
 
+**NuGet sources:** the repo `NuGet.Config` clears inherited package sources and source mappings, and maps every package (`*`) to nuget.org. Builds then do not depend on machine or user NuGet settings: a user-level `packageSourceMapping` caused NU1100 on the user's office PC. If a package must ever come from another feed, add that feed and its pattern there.
+
 **EF Core must stay on 9.0.x** in every project (including `Microsoft.EntityFrameworkCore.SqlServer` and `Microsoft.EntityFrameworkCore.InMemory` in the tests) until Pomelo releases a version for EF Core 10. Pomelo 9 only accepts `[9.0.0, 9.0.999]`. For the same reason, `Microsoft.VisualStudio.Web.CodeGeneration.Design` is not referenced: version 10 requires EF Core 10.
 
 - `Bulky.Migrations.SqlServer` holds the original SQL Server history: 14 migrations from 2025, plus `RemoveDiscriminatorFromUsers`. Never delete or edit applied migrations, because existing SQL Server databases depend on them.

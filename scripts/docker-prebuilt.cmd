@@ -14,7 +14,7 @@ echo === 1/2 Compiling the app on this PC (dotnet publish)
 if exist publish rmdir /s /q publish
 dotnet publish BulkyWeb\BulkyWeb.csproj --configuration Release --output publish
 if errorlevel 1 (
-    echo dotnet publish failed. Is the .NET 10 SDK installed?  dotnet --list-sdks
+    echo dotnet publish failed: see the errors above. The .NET 10 SDK must be listed by: dotnet --list-sdks
     exit /b 1
 )
 
